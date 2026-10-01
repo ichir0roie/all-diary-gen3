@@ -40,6 +40,16 @@ Next.js から db を直接開くと、その全部を TypeScript にもう一�
 
 手元で日記を書く人を Cognito の自分と同じにしたいときは、`DIARY_LOCAL_USER_ID` に自分の sub を渡して起こす。
 
+### モックの日記で試す
+
+画面や API を試すだけなら、本物の日記は要らない。手元の開発用の db(`diary_dev`)に、今の前後 10 年へ散らした作り物の日記とコメントを入れ、
+そこに向けて起こす(転送は要らない)。VS Code なら タスク `mock data` のあとに `app mock`。
+
+```
+.venv/bin/python -m tool.dev.mock_data   # diary_dev の local の行を消し、日記 3000 件とコメントを入れ直す。--count / --years / --seed / --user
+DIARY_DATABASE_URL=$(infra_local/postgres.sh .venv/bin/python) DIARY_DATABASE_IAM_AUTH=0 .venv/bin/python -m gui.dev
+```
+
 別々に起こすなら次の二つ。
 
 ```

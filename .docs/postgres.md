@@ -31,6 +31,9 @@ RDS に作るときは、マスターで流す(`tool.aws.rds` がマスターの
 
 テスト(`tool.test`)は、同じサーバーの `diary_test` を使う。本番の行は写さず、テストが自分の行を足す(`.claude/docs/testing.md`)。
 
+`diary_dev` も本番の行は写さない。画面や API を手元で試すときは、`.venv/bin/python -m tool.dev.mock_data` で作り物の日記とコメント
+(今の前後 10 年に散らした時刻)を入れる(`gui/readme.md`「モックの日記で試す」)。
+
 ## 時刻
 
 日記・コメントの `time` は時差を持つ時刻(`timestamp with time zone`)。db の中では UTC の時点として持ち、読み出しは日本時間にそろえる

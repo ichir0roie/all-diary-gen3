@@ -63,6 +63,62 @@
       }
     },
     {
+      "label": "mock data",
+      // 開発用の db(diary_dev)の local の行を消し、今の前後 10 年に散らした作り物の日記とコメントを入れ直す
+      "command": ".venv/bin/python",
+      "args": ["-m", "tool.dev.mock_data"],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONUTF8": "1",
+          "PYTHONPATH": "${workspaceFolder}",
+          "DIARY_DEV_DATABASE_URL": "postgresql+psycopg://diary:diary@127.0.0.1:55433/diary_dev"
+        }
+      },
+      "windows": {
+        "command": ".venv\\Scripts\\python.exe"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "close": false
+      }
+    },
+    {
+      "label": "app mock",
+      // app と同じだが、本番の RDS でなく開発用の db(diary_dev)を読み書きする。転送は要らない。行は先にタスク「mock data」で入れる
+      "command": ".venv/bin/python",
+      "args": ["-m", "gui.dev"],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONUTF8": "1",
+          "PYTHONPATH": "${workspaceFolder}",
+          "DIARY_DATABASE_URL": "postgresql+psycopg://diary:diary@127.0.0.1:55433/diary_dev",
+          "DIARY_DATABASE_IAM_AUTH": "0"
+        }
+      },
+      "linux": {
+        "options": {
+          "shell": {
+            "executable": "bash",
+            "args": ["-ic"]
+          }
+        }
+      },
+      "windows": {
+        "command": ".venv\\Scripts\\python.exe"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "close": true
+      }
+    },
+    {
       "label": "app browser",
       "type": "shell",
       // API・画面はすでに起きている前提で、ブラウザだけ開く(gui.dev --browser-only)

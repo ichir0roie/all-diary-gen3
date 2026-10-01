@@ -5,48 +5,16 @@
 """
 import logging
 import os
-import subprocess
-import sys
 
 from sqlalchemy.engine import make_url
 
-logger = logging.getLogger(__name__)
+from tool.local_db import ROOT, local_database_url, pin_database_url
 
 TEST_DATABASE_NAME = "diary_test"
-PRODUCTION_DATABASE_URL = os.environ.get("DIARY_DATABASE_URL") or None
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+TEST_DATABASE_URL = local_database_url(TEST_DATABASE_NAME)
+pin_database_url(TEST_DATABASE_URL, "tool.test")
 
-
-def _dev_database_url() -> str:
-    """開発用の PostgreSQL の URL。渡されていなければ、テストで要ったこの時に `infra_local/postgres.sh` で用意する。"""
-    dev = os.environ.get("DIARY_DEV_DATABASE_URL")
-    if dev:
-        return dev
-    logger.info("開発用の PostgreSQL を用意する(infra_local/postgres.sh)")
-    result = subprocess.run(["bash", os.path.join("infra_local", "postgres.sh"), sys.executable], cwd=ROOT,
-                            stdout=subprocess.PIPE, text=True, encoding="utf-8", check=True)
-    dev = result.stdout.strip().splitlines()[-1]
-    os.environ["DIARY_DEV_DATABASE_URL"] = dev
-    return dev
-
-
-def _test_database_url() -> str:
-    url = make_url(_dev_database_url()).set(database=TEST_DATABASE_NAME)
-    # 取り違えて本番(転送越しの RDS も 127.0.0.1)に書かないよう、開発用の db と同じサーバーの別の db だけを許す
-    if url.host not in ("127.0.0.1", "localhost") or PRODUCTION_DATABASE_URL and \
-            (make_url(PRODUCTION_DATABASE_URL).host, make_url(PRODUCTION_DATABASE_URL).port) == (url.host, url.port):
-        raise RuntimeError(f"テスト用の db が手元の PostgreSQL を指していない: {url.render_as_string(hide_password=True)}")
-    return url.render_as_string(hide_password=False)
-
-
-TEST_DATABASE_URL = _test_database_url()
-
-if "db.schema" in sys.modules and sys.modules["db.schema"].DATABASE_URL != TEST_DATABASE_URL:
-    raise RuntimeError("db.schema がテスト用の db 以外で先に読み込まれている。tool.test 配下は "
-                       f"{TEST_DATABASE_NAME} しか使わないので、こちらを先に import する")
-
-os.environ["DIARY_DATABASE_URL"] = TEST_DATABASE_URL
-os.environ.pop("DIARY_DATABASE_IAM_AUTH", None)
+logger = logging.getLogger(__name__)
 
 
 def ensure_test_db() -> None:

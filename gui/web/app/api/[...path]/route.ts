@@ -72,6 +72,12 @@ async function sign(target: URL, method: string, headers: Headers, body: Uint8Ar
 }
 
 async function forward(request: NextRequest, context: { params: Promise<{ path: string[] }> }): Promise<Response> {
+  // ログインを掛けずに localUserId として流してよいのは手元の API だけ。署名や合言葉の要る公開の API に置いたのにユーザープールの
+  // 変数が欠けていたら、誰でも localUserId の日記を読み書きできてしまうので、流さずに止める
+  if (!loginRequired && (signer || apiKey)) {
+    console.error("NEXT_PUBLIC_DIARY_USER_POOL_ID / NEXT_PUBLIC_DIARY_USER_POOL_CLIENT_ID が無いので、公開の API へは流さない");
+    return Response.json({ detail: T.signInRequired }, { status: 401 });
+  }
   const userId = loginRequired ? await signedInUser() : localUserId;
   if (!userId) return Response.json({ detail: T.signInRequired }, { status: 401 });
   const { path } = await context.params;

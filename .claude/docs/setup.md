@@ -10,7 +10,7 @@ db/                 記録の形(SQLAlchemy)。列はここ一か所で決まる
 data_access_logic/  db を読み書きする処理と入口。db に触れるのはここ越しだけ(一覧は data_access_logic/readme.md)
                     diary/ comment/ csv_file/(CSV の出し入れ) query/(入口が共に使う問い合わせ)
 gui/                api/(FastAPI)と web/(Next.js)。使い方は gui/readme.md
-tool/               AWS の RDS へ踏み台越しに繋ぐ aws/rds、テスト用の db を作る test/
+tool/               AWS の RDS へ踏み台越しに繋ぐ aws/rds、テスト用の db を作る test/、開発用の db にモックの行を入れる dev/
 tests/              pytest(入口と API)
 infra/              AWS のリソース(CDK、TypeScript)。lambda/ に API のコンテナ
 infra_local/        開発・テスト用の空の PostgreSQL を用意する postgres.sh

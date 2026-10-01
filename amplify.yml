@@ -14,6 +14,8 @@ applications:
             - npm ci
         build:
           commands:
+            # ユーザープールの変数が欠けると画面がログインを掛けずに建つので、その形では建てない(route handler も流さずに止める)
+            - test -n "$NEXT_PUBLIC_DIARY_USER_POOL_ID" && test -n "$NEXT_PUBLIC_DIARY_USER_POOL_CLIENT_ID"
             # サーバー側(`app/api/[...path]/route.ts`)が実行時に読む値は、ビルドの環境変数から .env.production に写す
             - env | grep -E '^DIARY_(API_URL|API_KEY)=' >> .env.production || true
             - npm run build
