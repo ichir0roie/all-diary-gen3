@@ -99,13 +99,7 @@ table.list code { font-size: 0.8rem; overflow-wrap: anywhere; }
 .diary-card .comments li + li { margin-top: 0.4rem; }
 
 .diary-input { position: sticky; bottom: 0; display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; padding: 0.6rem 0; background: var(--bg); }
-.diary-input .editor { position: relative; flex: 1; min-width: 12rem; display: flex; }
-.diary-input .editor textarea { flex: 1; padding-bottom: 1.8rem; }
-/* 書いている文章に似た日記の数。書く欄の右下に重ねる */
-.diary-input .similar-count {
-  position: absolute; right: 0.45rem; bottom: 0.4rem; padding: 0 0.55rem; border-radius: 999px; font-size: 0.8rem;
-  background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--ink); border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
-}
+.diary-input textarea { flex: 1; min-width: 12rem; }
 .diary-input .status { flex-basis: 100%; }
 
 /* モーダル(components/Modal.tsx) */
@@ -128,13 +122,7 @@ table.list code { font-size: 0.8rem; overflow-wrap: anywhere; }
 .modal p { margin: 0; }
 .modal .field { margin-bottom: 0; }
 
-/* 似た日記の一覧(components/SimilarDiariesModal.tsx) */
-.similar-list, .pending-list { list-style: none; margin: 0; padding: 0; }
-.similar-list li { padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
-.similar-list .time { color: var(--muted); font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
-.similar-list .time .badge { margin-left: 0; }
-.similar-list .time .link { margin-left: auto; font-size: 0.8rem; }
-.similar-list .text { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 8rem; overflow: auto; }
+.pending-list { list-style: none; margin: 0; padding: 0; }
 .pending-list li { color: var(--muted); font-size: 0.9rem; }
 
 /* 同じ日(app/on-this-day) */
@@ -172,3 +160,13 @@ table.list code { font-size: 0.8rem; overflow-wrap: anywhere; }
 .heatmap .cell.level-2 { background: color-mix(in srgb, var(--accent) 52%, var(--chip)); }
 .heatmap .cell.level-3 { background: color-mix(in srgb, var(--accent) 76%, var(--chip)); }
 .heatmap .cell.level-4 { background: var(--accent); }
+
+/* 似た日記(app/similar)。元の日記を上に置き、その下に似ている順に並べる */
+.similar-page { max-width: 46rem; }
+.similar-page .search textarea { min-height: 4.5rem; }
+.similar-page h2 { display: flex; align-items: baseline; gap: 0.6rem; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding-bottom: 0.2rem; margin-top: 1rem; }
+.similar-page h2 .back { margin-left: auto; font-weight: 400; font-size: 0.85rem; }
+.similar-page .empty { color: var(--muted); font-size: 0.9rem; }
+.similar-item .meta { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.8rem; margin-bottom: 0.2rem; }
+.similar-item .meta .badge { margin-left: 0; }
+.similar-item .meta a { margin-left: auto; }

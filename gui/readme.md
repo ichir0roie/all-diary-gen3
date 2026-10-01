@@ -4,11 +4,13 @@
 
 - 日記の画面(`/`): 同じ時期の一週間を、今年・去年・一昨年と横に並べる(狭い画面では今年の一列だけ)。
   Year / Week のボタンで年と週をずらす。`/?day=YYYY-MM-DD` で開くとその日の週を出す(同じ日・ヒートマップ・似た日記から飛ぶ先)。
-  日記を押すと「Comment / Edit / Delete」、コメントを押すと「Edit / Delete」のメニューが開く(日記を消すと付いたコメントも消える)。
-  下の欄で日記を書く。書いている文章に似た日記の数が欄の右下に出て、押すと似ている順の一覧が開く。
-  「Send to future…」は、届ける日を選んで日記を未来へ送る(その日の 0 時まで封をし、届くとその日の日記として並ぶ)
+  日記を押すと「Comment / Similar diaries / Edit / Delete」、コメントを押すと「Edit / Delete」のメニューが開く
+  (日記を消すと付いたコメントも消える。このメニューは同じ日・似た日記の画面の日記でも同じ)。
+  下の欄で日記を書く。「Send to future…」は、届ける日を選んで日記を未来へ送る(その日の 0 時まで封をし、届くとその日の日記として並ぶ)
 - 同じ日の画面(`/on-this-day`): 今日と同じ月日の日記を、書き始めた年から今年まで年ごとに縦に並べる。Day で日をずらし、
   Range で前後何日まで含めるかを選ぶ
+- 似た日記の画面(`/similar`): 日記のメニューの「Similar diaries」から `/similar?diary=ID` で来ると、その日記を上に、
+  似た日記を似ている順に並べる(一致の割合と、その週を開くリンク付き)。メニューの「Similar」から来たときは、打った文章に似た日記を探す
 - ヒートマップの画面(`/heatmap`): 書いた日を、年ごとのカレンダーに一色の濃さで並べる。件数と文字数を切り替えられ、日を押すとその週を開く
 - データの画面(`/data`): 取り込みと書き出し。以前の API の SQLite の db ファイルを選ぶと、中の人ごとの件数を出し、選んだ人の日記と
   コメントを自分の行として取り込む。日記・コメントの CSV の取り込みと、取り込み直せる形の CSV の書き出しもここ。
@@ -77,6 +79,7 @@ DIARY_DATABASE_URL=$(infra_local/postgres.sh .venv/bin/python) DIARY_DATABASE_IA
 | PATCH | `/api/diaries/{id}` | 日記の本文を書き直す。`{"text"}`(`UpdateDiary`) |
 | DELETE | `/api/diaries/{id}` | 日記を付いたコメントごと消す(`DeleteDiary`) |
 | POST | `/api/diaries/similar` | `{"text"}` に似た日記の数と、似ている順の頭の 50 件(`SearchSimilarDiaries`) |
+| GET | `/api/diaries/{id}/similar` | 日記一件に似た日記の数と、似ている順の頭の 50 件。元の日記は除く(`ListSimilarDiaries`) |
 | GET | `/api/on-this-day?day=&around_days=` | `day` と同じ月日の前後の日記を、年ごとに(`ListOnThisDay`) |
 | GET | `/api/diary-counts?start_date=&end_date=` | 日ごとの日記の件数と文字数(`CountDiariesByDay`) |
 | POST | `/api/future-diaries` | 日記を未来へ送る。`{"text", "deliver_on"}`(`SendFutureDiary`) |

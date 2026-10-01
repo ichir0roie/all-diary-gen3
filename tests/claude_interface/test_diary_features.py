@@ -12,6 +12,7 @@ from data_access_logic.diary.form import DiaryUpdateForm, FutureDiaryCreateForm
 from data_access_logic.diary.list_diaries import ListDiaries
 from data_access_logic.diary.list_future_diaries import ListFutureDiaries
 from data_access_logic.diary.list_on_this_day import ListOnThisDay, same_day_in
+from data_access_logic.diary.list_similar_diaries import ListSimilarDiaries
 from data_access_logic.diary.read_diary import ReadDiary
 from data_access_logic.diary.search_similar_diaries import SearchSimilarDiaries, grams
 from data_access_logic.diary.send_future_diary import SendFutureDiary
@@ -142,3 +143,25 @@ def test_search_similar_diaries(shown, book):
     assert SearchSimilarDiaries(book.user_id, "ですね").run() == {"total": 0, "diaries": []}
     assert SearchSimilarDiaries(book.other_user_id, "駅前の本屋").run() == {"total": 0, "diaries": []}
 
+
+
+def test_list_similar_diaries(shown, book):
+    source, near, _ = add_diaries(
+        book.user_id, (datetime(2023, 5, 1, 21, 0, tzinfo=JST), "駅前の本屋で文庫本を二冊買った。"),
+        (datetime(2023, 5, 2, 21, 0, tzinfo=JST), "仕事帰りに駅前の本屋に寄った。"),
+        (datetime(2023, 5, 3, 21, 0, tzinfo=JST), "カレーを作りすぎた。"))
+
+    result = shown(ListSimilarDiaries(book.user_id, source))
+
+    # 元の日記は、いちばん似ていても出さない
+    assert [diary["diary"]["id"] for diary in result["diaries"]] == [near]
+    assert result["total"] == 1
+
+
+def test_list_similar_to_unreadable_diary(shown, book):
+    deliver_on = (datetime.now(JST) + timedelta(days=10)).date()
+    sealed = shown(SendFutureDiary(book.user_id, FutureDiaryCreateForm(text="封をした日記", deliver_on=deliver_on)))
+
+    for diary_id in (book.other_diary_id, sealed["id"]):
+        with pytest.raises(UnknownRecordError):
+            ListSimilarDiaries(book.user_id, diary_id).run()

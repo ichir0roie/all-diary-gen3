@@ -83,6 +83,12 @@ export const listOnThisDay = (day: string, aroundDays: number) =>
 /** 日ごとの日記の件数と文字数。書いた日だけ */
 export const countDiariesByDay = () => api<DayCount[]>("/api/diary-counts");
 
+export const readDiary = (diaryId: number) => api<DiaryRecord>(`/api/diaries/${diaryId}`);
+
+/** 日記一件に似た日記(元の日記は除く)。似ている順 */
+export const listSimilarDiaries = (diaryId: number) => api<SimilarDiaries>(`/api/diaries/${diaryId}/similar`);
+
+/** 文章に似た日記。似ている順 */
 export const searchSimilarDiaries = (text: string, signal?: AbortSignal) =>
   api<SimilarDiaries>("/api/diaries/similar", { method: "POST", body: JSON.stringify({ text }), signal });
 

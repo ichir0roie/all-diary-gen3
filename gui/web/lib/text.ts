@@ -12,6 +12,7 @@ export const T = {
     diary: "Diary",
     onThisDay: "On This Day",
     heatmap: "Heatmap",
+    similar: "Similar",
     data: "Data",
     signOut: "Sign out",
   },
@@ -29,6 +30,7 @@ export const T = {
     posting: "Posting…",
     menu: "Menu",
     comment: "Comment",
+    similar: "Similar diaries",
     edit: "Edit",
     delete: "Delete",
     editTitle: "Edit diary",
@@ -42,11 +44,16 @@ export const T = {
   },
 
   similar: {
-    count: (n: number) => `≈ ${n}`,
-    hint: (n: number) => `${n} similar diar${n === 1 ? "y" : "ies"}. Click to list.`,
-    title: (n: number) => `Similar diaries (${n})`,
+    title: "Similar diaries",
+    source: "Diaries similar to this one",
+    searchLabel: "Find diaries similar to this text",
+    searchPlaceholder: "Type some words or paste a passage",
+    hint: "Or click a diary on any page and choose “Similar diaries”.",
+    found: (total: number) => `${total} similar diar${total === 1 ? "y" : "ies"}`,
     more: (shown: number, total: number) => `Showing the ${shown} most similar of ${total}.`,
+    none: "No similar diary.",
     score: (score: number) => `${Math.round(score * 100)}% match`,
+    backToSearch: "Search by text",
   },
 
   future: {

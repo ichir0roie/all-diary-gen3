@@ -43,10 +43,12 @@ class SearchSimilarDiaries(SessionEntrypoint):
     文章を二文字の組に切り、組ごとに、その人の日記のうちいくつに出てくるかで重みを付ける(どの日記にも出る組ほど軽い)。
     `text` の組の重みのうち `MIN_SCORE` 以上が出てくる日記を、似た日記とする。拡張(pg_trgm など)は使わず、LIKE で数える。"""
 
-    def __init__(self, user_id: str, text: str, limit: int = 50):
+    def __init__(self, user_id: str, text: str, limit: int = 50, exclude_diary_id: int | None = None):
         self.user_id = user_id
         self.text = text
         self.limit = limit
+        # 日記から似た日記を探すときの、元の日記(自分自身がいちばん似てしまうので除く)
+        self.exclude_diary_id = exclude_diary_id
 
     def execute(self, s: Session) -> SimilarDiaries:
         none = SimilarDiaries(total=0, diaries=[])
@@ -54,6 +56,8 @@ class SearchSimilarDiaries(SessionEntrypoint):
         if not found:
             return none
         own = and_(Diary.user_id == self.user_id, delivered())
+        if self.exclude_diary_id is not None:
+            own = and_(own, Diary.id != self.exclude_diary_id)
         matches = [Diary.text.icontains(gram, autoescape=True) for gram in found]
         counts = s.execute(select(func.count(), *(func.count().filter(match) for match in matches)).where(own)).one()
         total_diaries, frequencies = counts[0], counts[1:]

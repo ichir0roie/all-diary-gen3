@@ -160,6 +160,17 @@ def test_similar_diaries(client, book):
     assert response.json()["diaries"][0]["diary"]["id"] == created.json()["id"]
 
 
+def test_similar_to_diary(client, book):
+    source = client.post("/api/diaries", json={"text": "駅前の本屋で文庫本を買った"}, headers=as_user(book.user_id))
+    near = client.post("/api/diaries", json={"text": "駅前の本屋に寄った"}, headers=as_user(book.user_id))
+
+    response = client.get(f"/api/diaries/{source.json()['id']}/similar", headers=as_user(book.user_id))
+    other = client.get(f"/api/diaries/{book.other_diary_id}/similar", headers=as_user(book.user_id))
+
+    assert [diary["diary"]["id"] for diary in response.json()["diaries"]] == [near.json()["id"]]
+    assert other.status_code == 404
+
+
 def test_csv(client, book):
     exported = client.get("/api/csv/diary", headers=as_user(book.user_id))
     imported = client.post("/api/csv/diary", json={"text": exported.text}, headers=as_user(book.other_user_id))

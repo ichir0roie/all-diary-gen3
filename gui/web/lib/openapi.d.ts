@@ -162,6 +162,26 @@ export interface paths {
         patch: operations["update_diary_api_diaries__diary_id__patch"];
         trace?: never;
     };
+    "/api/diaries/{diary_id}/similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Similar Diaries
+         * @description 日記一件に似た日記の数と、似ている順の頭の何件か(元の日記は除く)。
+         */
+        get: operations["list_similar_diaries_api_diaries__diary_id__similar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diaries/{diary_id}/comments": {
         parameters: {
             query?: never;
@@ -864,6 +884,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiaryRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_similar_diaries_api_diaries__diary_id__similar_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                diary_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimilarDiaries"];
                 };
             };
             /** @description Validation Error */

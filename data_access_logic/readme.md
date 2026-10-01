@@ -57,7 +57,8 @@ db の触り方(入口越し・読み取り)は `.claude/docs/db.md` を見る�
 | 「まだ届いていない日記は?」 | `diary.list_future_diaries.ListFutureDiaries(user_id)`。届く時刻と書いた時刻だけ(本文は返さない) |
 | 「◯年前の今日の日記」「毎年のこの日」 | `diary.list_on_this_day.ListOnThisDay(user_id, day, around_days=0)`。`day` と同じ月日の前後 `around_days` 日(30 まで)の日記を、書き始めた年から `day` の年まで、新しい年から年ごとに返す。日記の無い年も空で返す。2 月 29 日はうるう年でない年では 2 月 28 日 |
 | 「日ごとに何件書いた?」 | `diary.count_diaries_by_day.CountDiariesByDay(user_id, start_date=None, end_date=None)`。日本時間の暦の日ごとの件数と文字数。書いた日だけ。本文は返さない |
-| 「この文章に似た日記」 | `diary.search_similar_diaries.SearchSimilarDiaries(user_id, text, limit=50)`。文章を二文字の組に切り(ひらがなだけの組・句読点をまたぐ組は捨てる)、その人の日記にどれだけ出るかで重みを付けて、重みの 3 割以上が出てくる日記を似ているとする。`{"total", "diaries": [{"score", "diary"}]}` を似ている順に返す |
+| 「この日記に似た日記」 | `diary.list_similar_diaries.ListSimilarDiaries(user_id, diary_id, limit=50)`。その日記の本文で `SearchSimilarDiaries` を回し、元の日記は除く。他の人の日記・まだ届いていない日記は `UnknownRecordError` |
+| 「この文章に似た日記」 | `diary.search_similar_diaries.SearchSimilarDiaries(user_id, text, limit=50, exclude_diary_id=None)`。文章を二文字の組に切り(ひらがなだけの組・句読点をまたぐ組は捨てる)、その人の日記にどれだけ出るかで重みを付けて、重みの 3 割以上が出てくる日記を似ているとする。`{"total", "diaries": [{"score", "diary"}]}` を似ている順に返す |
 | 「この日記のコメント」 | `comment.list_comments.ListComments(user_id, diary_id)` |
 | 「このコメントを見せて」 | `comment.read_comment.ReadComment(user_id, comment_id)` |
 | 「このコメントを書き直して」 | `comment.update_comment.UpdateComment(user_id, comment_id, CommentUpdateForm(text=…))`。時刻は変えない |

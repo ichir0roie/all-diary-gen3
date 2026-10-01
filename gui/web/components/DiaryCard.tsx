@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, type MouseEvent } from "react";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import PopupMenu, { type MenuItem } from "@/components/PopupMenu";
@@ -29,9 +30,10 @@ type Props = {
   onDeleted: (diaryId: number) => void;
 };
 
-/** 日記一件とコメント。日記を押すと「コメント・書き直す・消す」、コメントを押すと「書き直す・消す」のメニューを開く。
+/** 日記一件とコメント。日記を押すと「コメント・似た日記・書き直す・消す」、コメントを押すと「書き直す・消す」のメニューを開く。
  * 書き足し・書き直しはこのカードの中だけで反映する(週を読み直さない) */
 export default function DiaryCard({ diary: initial, onDeleted }: Props) {
+  const router = useRouter();
   const [diary, setDiary] = useState(initial);
   const [comments, setComments] = useState<CommentRecord[]>(initial.comments);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
@@ -47,6 +49,7 @@ export default function DiaryCard({ diary: initial, onDeleted }: Props) {
 
   const diaryItems: MenuItem[] = [
     { label: T.diary.comment, onSelect: () => setDialog({ kind: "comment" }) },
+    { label: T.diary.similar, onSelect: () => router.push(`/similar?${new URLSearchParams({ diary: String(diary.id) })}`) },
     { label: T.diary.edit, onSelect: () => setDialog({ kind: "editDiary" }) },
     { label: T.diary.delete, onSelect: () => setDialog({ kind: "deleteDiary" }), danger: true },
   ];

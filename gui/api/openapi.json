@@ -674,6 +674,62 @@
         }
       }
     },
+    "/api/diaries/{diary_id}/similar": {
+      "get": {
+        "summary": "List Similar Diaries",
+        "description": "日記一件に似た日記の数と、似ている順の頭の何件か(元の日記は除く)。",
+        "operationId": "list_similar_diaries_api_diaries__diary_id__similar_get",
+        "parameters": [
+          {
+            "name": "diary_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Diary Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarDiaries"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/diaries/{diary_id}/comments": {
       "get": {
         "summary": "List Comments",

@@ -19,18 +19,11 @@ export default function Home() {
   // next build が書き出す HTML に建てた日の日付が残らないよう、今日はブラウザで開いてから決める
   const [baseDay, setBaseDay] = useState<string | null>(null);
 
-  // 他の画面(同じ日・ヒートマップ)から `/?day=YYYY-MM-DD` で開かれたら、その日の週を出す
+  // 他の画面(同じ日・ヒートマップ・似た日記)から `/?day=YYYY-MM-DD` で開かれたら、その日の週を出す
   useEffect(() => {
     const day = new URLSearchParams(window.location.search).get("day");
     setBaseDay(isDay(day) ? day : today());
   }, []);
-
-  const jump = (day: string) => {
-    setBaseDay(day);
-    setYearOffset(0);
-    setDayOffset(DAYS_AHEAD);
-    window.history.replaceState(null, "", `/?${new URLSearchParams({ day })}`);
-  };
 
   if (baseDay === null) return <div className="status info">{T.loading}</div>;
   const endDay = addDays(baseDay, dayOffset);
@@ -62,7 +55,6 @@ export default function Home() {
         ))}
       </div>
       <DiaryInput
-        onJump={jump}
         onPosted={() => {
           // 開いたまま日をまたいだあとでも、書いたばかりの日記が範囲に入るよう、今日を取り直す
           setBaseDay(today());

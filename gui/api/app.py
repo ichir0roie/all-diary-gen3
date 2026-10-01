@@ -37,6 +37,7 @@ from data_access_logic.diary.form import DiaryCreateForm, DiaryUpdateForm, Futur
 from data_access_logic.diary.list_diaries import ListDiaries
 from data_access_logic.diary.list_future_diaries import ListFutureDiaries
 from data_access_logic.diary.list_on_this_day import ListOnThisDay
+from data_access_logic.diary.list_similar_diaries import ListSimilarDiaries
 from data_access_logic.diary.read_diary import ReadDiary
 from data_access_logic.diary.record import (DayCount, DeletedDiary, DiaryRecord, FutureDiaryRecord, OnThisDayYear,
                                             SimilarDiaries)
@@ -181,6 +182,12 @@ def delete_diary(diary_id: int, user_id: UserId, s: Db) -> DeletedDiary:
     """日記を、付いたコメントごと消す。"""
     with s.begin():
         return DeleteDiary(user_id, diary_id).execute(s)
+
+
+@app.get("/api/diaries/{diary_id}/similar", response_model=SimilarDiaries)
+def list_similar_diaries(diary_id: int, user_id: UserId, s: Db) -> SimilarDiaries:
+    """日記一件に似た日記の数と、似ている順の頭の何件か(元の日記は除く)。"""
+    return ListSimilarDiaries(user_id, diary_id).execute(s)
 
 
 @app.get("/api/diaries/{diary_id}/comments", response_model=list[CommentRecord])
