@@ -24,7 +24,7 @@ AWS の db(RDS for PostgreSQL、db `diary`)と資源に触れる作業、API(Lam
 | --- | --- | --- | --- |
 | 手元(CLI・VS Code) | 踏み台越しの転送(`tool.aws.rds --serve`、127.0.0.1:25432)。ふだんの読み書きは IAM データベース認証(`DIARY_DATABASE_IAM_AUTH=1`)。マイグレーションなど DDL が要る作業は `tool.aws.rds --` 越しにマスターで | `diary_app`(ふだん)/ マスター(DDL) | 手元の AWS CLI の権限(`rds-db:connect`・マスターの秘密の読み取り) |
 | Lambda(`diary-api`) | VPC の中から psycopg で直に。IAM データベース認証(`DIARY_DATABASE_IAM_AUTH=1`) | `diary_app`(行の読み書きだけ) | 実行ロールの `rds-db:connect` |
-| 画面(Amplify) | db には繋がない。route handler が Lambda の関数 URL を SigV4 の署名と合言葉で呼ぶ | 無し | Amplify の SSR のコンピュートロールと、合言葉(`DIARY_API_KEY`) |
+| 画面(Amplify) | db には繋がない。route handler が Lambda の関数 URL を SigV4 の署名と合言葉で呼ぶ | 無し | Amplify の SSR のコンピュートロール(合言葉は実行時に SSM から読む) |
 
 ## 決まり
 
@@ -37,4 +37,5 @@ AWS の db(RDS for PostgreSQL、db `diary`)と資源に触れる作業、API(Lam
    これから増える表への `diary_app` の権限は、マスターに掛けた既定の権限(`infra/sql/diary_app.sql`)で付くので、マイグレーションをマスター以外で流さない
 5. AWS の資源は `infra/` の CDK で持つ。コンソールや CLI で直に作らない・変えない(状態を調べる読み取りはよい)。
    `cdk deploy` や資源を変える操作は、ユーザに承認を得てから行う。費用を抑えるため、NAT ゲートウェイや VPC のインターフェースエンドポイントを足さない
-6. 関数 URL は SSM の `/diary/api/function-url`、合言葉は `/diary/api-keys/gui` から引く。合言葉の値はログや報告にも出さない
+6. 関数 URL は SSM の `/diary/api/function-url`、合言葉は `/diary/api-keys/gui` から引く。合言葉の値はログや報告にも出さない。
+   合言葉の本体は SSM にだけ置き、Lambda の環境変数・CloudFormation の template・Amplify の環境変数・ビルドの成果物に写さない(Lambda にはハッシュだけ)

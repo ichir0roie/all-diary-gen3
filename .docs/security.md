@@ -17,7 +17,7 @@ AWS の構成と建て方は [aws-deploy.md](aws-deploy.md)、CI は [ci-cd.md](
 
 | 秘密 | 本体の置き場所 | 写しがある所 | 読める者 | 替え方 |
 | --- | --- | --- | --- | --- |
-| API の合言葉(`gui`) | SSM `/diary/api-keys/gui`(SecureString) | Lambda の環境変数 `DIARY_API_KEYS`(CloudFormation の template にも平文で載る)、Amplify の環境変数 `DIARY_API_KEY`、Amplify のビルドが作る `.env.production` | AWS で SSM・Lambda・CloudFormation・Amplify を読める人 | [aws-deploy.md](aws-deploy.md#守り)の「合言葉を替える」 |
+| API の合言葉(`gui`) | SSM `/diary/api-keys/gui`(SecureString) | 無し。Lambda の環境変数 `DIARY_API_KEYS`(と CloudFormation の template)には SHA-256 だけを置き、画面のサーバーは実行時に SSM から読んで 5 分だけ持つ | SSM の SecureString を読める人と、Amplify の SSR のコンピュートロール | [aws-deploy.md](aws-deploy.md#守り)の「合言葉を替える」 |
 | RDS のマスターのパスワード | Secrets Manager(RDS の管理。自動で替わる) | 無し(`tool.aws.rds --` がその場で読み、子のプロセスにだけ渡す) | `secretsmanager:GetSecretValue` を持つ人 | RDS が替える |
 | `diary_app` の db への鍵 | 無し(パスワードを持たない) | IAM データベース認証のトークン(15 分) | `rds-db:connect` を持つ Lambda の実行ロールと手元の人 | 不要 |
 | 使う人のパスワード | Cognito | 無し | 無し | 画面の「パスワードを忘れた」か `aws cognito-idp admin-set-user-password` |
@@ -43,7 +43,7 @@ AWS の構成と建て方は [aws-deploy.md](aws-deploy.md)、CI は [ci-cd.md](
 | | どのページにも、よそへの埋め込みを禁じる・型の推し量りを禁じる・リファラを出さない・HTTPS を強いる見出しを付ける | `next.config.ts` |
 | | ユーザープールの変数が欠けていれば、ビルドを止め、route handler も流さない | `amplify.yml`・`route.ts` |
 | ② 画面 → API | 関数 URL は `AWS_IAM`。Amplify の SSR のコンピュートロールの署名が無い要求は、Lambda が起きる前に弾かれる | `DiaryApi` |
-| | その上で合言葉(`x-diary-api-key`)を比べる(時間の一定な比較) | `gui/api/app.py` |
+| | その上で合言葉(`x-diary-api-key`)を、ハッシュにして時間の一定な形で比べる | `gui/api/app.py` |
 | | 同時実行を 3 に絞り、呼ぶ側が暴れても費用と db の接続数が膨らまない | `DiaryApi` |
 | ③ API → db | Lambda は NAT の無い VPC の中。外へ出る道が無い | `DiaryData`・`DiaryApi` |
 | | db のロール `diary_app` は行の読み書きだけ(DDL 無し)。パスワードを持たず IAM 認証で繋ぐ | `infra/sql/diary_app.sql` |
@@ -67,7 +67,7 @@ AWS:
 
 - [ ] ルートユーザーに MFA を掛け、日々の作業はルートでしない
 - [ ] AWS Budgets で月の上限の知らせを置く(関数 URL を叩かれても署名が無ければ料金は出ないが、念のため)
-- [ ] Amplify の PR のプレビューは切ったままにする(公開リポジトリでは、プレビューのビルドに環境変数の合言葉が渡る)
+- [ ] Amplify の PR のプレビューは切ったままにする(公開リポジトリのフォークのコードが、コンピュートロールの権限で動くことになる)
 - [ ] 使い回す RDS がストレージを暗号化しているか確かめる(`aws rds describe-db-instances --query 'DBInstances[].StorageEncrypted'`。
   暗号化していなければ `cdk synth` も知らせる)
 - [ ] 合言葉は `openssl rand -hex 32` で作り、人に見せたり、どこかに貼ったりしたら替える
@@ -88,8 +88,6 @@ AWS:
    今の見出しは埋め込みなどを禁じるだけで、スクリプトの出所は絞っていない
 3. **CDK が作る RDS のストレージが暗号化されていない。** `storageEncrypted` を足すとインスタンスの作り直しになる(削除保護で deploy が止まる)。
    スナップショットを取り、暗号化して写し、そこから建て直して付け替える。使い回す RDS は上のチェックリストで確かめる
-4. **合言葉の写しが多い。** Lambda の環境変数(CloudFormation の template にも平文)、Amplify の環境変数、`.env.production` にある。
-   Lambda には鍵の SHA-256 だけを渡して比べる形にすれば、template から本体が消える
-5. **db への TLS が証明書を確かめていない(`sslmode=require`)。** VPC の中なので差し迫ってはいないが、RDS の CA の束を Lambda のイメージに入れ、
+4. **db への TLS が証明書を確かめていない(`sslmode=require`)。** VPC の中なので差し迫ってはいないが、RDS の CA の束を Lambda のイメージに入れ、
    `sslmode=verify-full` にできる
-6. **気付く仕組みが無い。** Lambda の 4xx・5xx の増え方、Cognito のログインの失敗、CloudTrail の root の使用に、CloudWatch のアラームを付ける
+5. **気付く仕組みが無い。** Lambda の 4xx・5xx の増え方、Cognito のログインの失敗、CloudTrail の root の使用に、CloudWatch のアラームを付ける

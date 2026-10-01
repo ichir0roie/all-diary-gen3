@@ -1,5 +1,6 @@
 import { Sha256 } from "@aws-crypto/sha256-js";
 import { createServerRunner } from "@aws-amplify/adapter-nextjs";
+import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
 import { SignatureV4 } from "@smithy/signature-v4";
 import { fetchAuthSession } from "aws-amplify/auth/server";
@@ -9,9 +10,10 @@ import { amplifyConfig, loginRequired } from "@/lib/auth";
 import { T } from "@/lib/text";
 
 // ブラウザは同じオリジンの `/api/*` を叩き、ここがサーバー側で API(FastAPI)へ流す。
-// 公開の API(Lambda の関数 URL)に置くときの合言葉 `DIARY_API_KEY` はここでだけ足し、ブラウザには渡さない
+// 公開の API(Lambda の関数 URL)に置くときの合言葉はここでだけ足し、ブラウザには渡さない
 const apiUrl = (process.env.DIARY_API_URL ?? "http://127.0.0.1:8766").replace(/\/+$/, "");
-const apiKey = process.env.DIARY_API_KEY ?? "";
+// 合言葉を直に渡すとき(手元で公開の API を試すときなど)。Amplify では置かず、下の SSM から読む
+const apiKeyFromEnv = process.env.DIARY_API_KEY ?? "";
 const API_KEY_HEADER = "x-diary-api-key";
 // 誰の日記かを API に伝える見出し。ブラウザから来た同じ名前の見出しは流さず(REQUEST_HEADERS に無い)、ここで確かめた人だけを入れる
 const USER_HEADER = "x-diary-user";
@@ -29,6 +31,23 @@ const lambdaUrlRegion = /\.lambda-url\.([a-z0-9-]+)\.on\.aws$/.exec(new URL(apiU
 const signer = lambdaUrlRegion
   ? new SignatureV4({ service: "lambda", region: lambdaUrlRegion, credentials: defaultProvider(), sha256: Sha256, applyChecksum: true })
   : null;
+
+// Amplify では合言葉を環境変数やビルドの成果物に写さず、SSM の SecureString からコンピュートロールで読む(infra の DiaryApi が権限を付ける)。
+// 替えた鍵を建て直し無しで拾うよう、読んだ値は少しのあいだだけ持つ
+const API_KEY_PARAMETER = "/diary/api-keys/gui";
+const API_KEY_TTL_MS = 5 * 60 * 1000;
+const ssm = lambdaUrlRegion ? new SSMClient({ region: lambdaUrlRegion, credentials: defaultProvider() }) : null;
+let cachedApiKey: { value: string; expiresAt: number } | null = null;
+
+/** 流すときに付ける合言葉。手元の API なら空 */
+async function apiKey(): Promise<string> {
+  if (apiKeyFromEnv || !ssm) return apiKeyFromEnv;
+  if (cachedApiKey && Date.now() < cachedApiKey.expiresAt) return cachedApiKey.value;
+  const { Parameter } = await ssm.send(new GetParameterCommand({ Name: API_KEY_PARAMETER, WithDecryption: true }));
+  if (!Parameter?.Value) throw new Error(`SSM の ${API_KEY_PARAMETER} が空`);
+  cachedApiKey = { value: Parameter.Value, expiresAt: Date.now() + API_KEY_TTL_MS };
+  return cachedApiKey.value;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +93,7 @@ async function sign(target: URL, method: string, headers: Headers, body: Uint8Ar
 async function forward(request: NextRequest, context: { params: Promise<{ path: string[] }> }): Promise<Response> {
   // ログインを掛けずに localUserId として流してよいのは手元の API だけ。署名や合言葉の要る公開の API に置いたのにユーザープールの
   // 変数が欠けていたら、誰でも localUserId の日記を読み書きできてしまうので、流さずに止める
-  if (!loginRequired && (signer || apiKey)) {
+  if (!loginRequired && (signer || apiKeyFromEnv)) {
     console.error("NEXT_PUBLIC_DIARY_USER_POOL_ID / NEXT_PUBLIC_DIARY_USER_POOL_CLIENT_ID が無いので、公開の API へは流さない");
     return Response.json({ detail: T.signInRequired }, { status: 401 });
   }
@@ -95,7 +114,14 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
     if (value) headers.set(name, value);
   }
   headers.set(USER_HEADER, userId);
-  if (apiKey) headers.set(API_KEY_HEADER, apiKey);
+  let key: string;
+  try {
+    key = await apiKey();
+  } catch (e) {
+    console.error(`合言葉を SSM から読めない: ${e instanceof Error ? e.message : String(e)}`);
+    return Response.json({ detail: T.apiUnreachable }, { status: 502 });
+  }
+  if (key) headers.set(API_KEY_HEADER, key);
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   const body = hasBody ? new Uint8Array(await request.arrayBuffer()) : undefined;
   let upstream: Response;

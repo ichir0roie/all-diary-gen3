@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
@@ -72,7 +73,8 @@ export class DiaryApiStack extends Stack {
         DIARY_DATABASE_URL:
           `postgresql+psycopg://${appDatabaseUser}@${db.endpoint}:${db.port}/${databaseName}?sslmode=require`,
         DIARY_DATABASE_IAM_AUTH: "1",
-        DIARY_API_KEYS: `gui=${readApiKey("gui")}`,
+        // 鍵の本体は template に載せず、SHA-256 だけを渡す(gui/api/app.py が届いた鍵のハッシュと比べる)
+        DIARY_API_KEYS: `gui=sha256:${createHash("sha256").update(readApiKey("gui")).digest("hex")}`,
       },
     });
     // 署名の無い要求は関数が起きる前に Lambda が弾くので、URL を叩かれ続けても料金もログも生まれない。
@@ -84,6 +86,12 @@ export class DiaryApiStack extends Stack {
       description: "Amplify SSR (gui/web) calls diary-api function URL",
     });
     grantInvokeViaFunctionUrl(amplifyComputeRole, fn.functionArn);
+    // 画面のサーバー(route handler)は合言葉を実行時に SSM から読む。Amplify の環境変数やビルドの成果物に鍵を写さないため。
+    // SecureString は AWS 管理の鍵(aws/ssm)で暗号化してあり、その鍵のポリシーが同じアカウントの SSM 越しの復号を許すので、kms の権限は要らない
+    amplifyComputeRole.addToPolicy(new iam.PolicyStatement({
+      actions: ["ssm:GetParameter"],
+      resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter${apiKeyParameter("gui")}`],
+    }));
 
     new ssm.StringParameter(this, "FunctionUrlParameter", {
       parameterName: `${parameterPrefix}/api/function-url`,
@@ -113,11 +121,15 @@ export function grantInvokeViaFunctionUrl(role: iam.Role, functionArn: string): 
   }));
 }
 
-// 鍵の値は SSM の SecureString に置き、git には入れない。deploy のときに読んで Lambda の環境変数に渡す
+// 鍵の値は SSM の SecureString に置き、git には入れない。deploy のときに読み、ハッシュにして Lambda の環境変数に渡す
 // (VPC の中の Lambda は、エンドポイント無しでは SSM を読めないため)
+function apiKeyParameter(caller: "gui"): string {
+  return `${parameterPrefix}/api-keys/${caller}`;
+}
+
 function readApiKey(caller: "gui"): string {
   return execFileSync("aws", [
-    "ssm", "get-parameter", "--name", `${parameterPrefix}/api-keys/${caller}`, "--with-decryption",
+    "ssm", "get-parameter", "--name", apiKeyParameter(caller), "--with-decryption",
     "--query", "Parameter.Value", "--output", "text",
   ], { encoding: "utf-8" }).trim();
 }
