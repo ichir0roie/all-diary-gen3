@@ -99,7 +99,9 @@ async def _bad_value(_request: Request, error: ValueError):
 
 @app.exception_handler(OperationalError)
 async def _db_unreachable(_request: Request, error: OperationalError):
-    return JSONResponse(status_code=503, content={"detail": str(error.orig or error)})
+    # ドライバの文言は db のエンドポイントや内側の IP を含むので、ログにだけ出して画面には返さない
+    logger.error(f"db に繋げない: {error.orig or error}")
+    return JSONResponse(status_code=503, content={"detail": "db に繋げない"})
 
 
 @app.get("/api/ping")

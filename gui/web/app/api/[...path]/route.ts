@@ -80,6 +80,12 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
   }
   const userId = loginRequired ? await signedInUser() : localUserId;
   if (!userId) return Response.json({ detail: T.signInRequired }, { status: 401 });
+  // ログインのクッキーは別のサイトからの要求にも付きうるので、ブラウザが別のサイトからと告げる要求は流さない(CSRF 除け)。
+  // 見出しの無い要求(古いブラウザ・手元の curl)はクッキーの SameSite に任せる
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
+    return Response.json({ detail: T.crossSiteRejected }, { status: 403 });
+  }
   const { path } = await context.params;
   const target = new URL(`${apiUrl}/api/${path.map(encodeURIComponent).join("/")}`);
   target.search = encodeQuery(request.nextUrl.searchParams);
@@ -102,8 +108,9 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
       redirect: "manual",
     });
   } catch (e) {
-    const detail = `API(${apiUrl})に届かない: ${e instanceof Error ? e.message : String(e)}`;
-    return Response.json({ detail }, { status: 502 });
+    // 流し先の URL(関数 URL)はブラウザに見せず、サーバーのログにだけ出す
+    console.error(`API(${apiUrl})に届かない: ${e instanceof Error ? e.message : String(e)}`);
+    return Response.json({ detail: T.apiUnreachable }, { status: 502 });
   }
   const responseHeaders = new Headers();
   for (const name of RESPONSE_HEADERS) {

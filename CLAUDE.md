@@ -32,6 +32,7 @@ Claude はユーザへの返答を常に日本語で書く。
 | db を読む処理(pydantic のマテリアル・入口の引数とレスポンス)を書く・直すとき、リファクタするとき | `.claude/docs/data-access.md` |
 | PostgreSQL(`DIARY_DATABASE_URL`)・AWS へのデプロイ・GitHub Actions を扱うとき | `.docs/README.md` から当たる文書 |
 | AWS の db・資源に触れるとき、API(Lambda)のコードを書くとき | `.claude/docs/aws.md` |
+| 秘密(合言葉・トークン・鍵)を扱うとき、認証・権限・守りに関わるコードや設定を変えるとき | `.docs/security.md` |
 
 # コーディング規約
 

@@ -154,9 +154,11 @@ GitHub の OIDC プロバイダはアカウントに一つしか作れない。a
 
 ## 守り
 
+秘密の置き場所の一覧、公開する前に手で整える設定、残っている課題は [security.md](security.md)。
+
 1. 画面: Cognito(`DiaryAuth`)にログインするまで中身を出さない(`gui/web/components/AuthGate.tsx`)。トークンはクッキーに置き、
    `/api/*` の route handler が adapter-nextjs で Cognito の公開鍵による署名を確かめてから、その人の sub を `x-diary-user` に入れて流す。
-   ブラウザが付けた `x-diary-user` は流さない。`NEXT_PUBLIC_DIARY_USER_POOL_*` が欠けていると、`amplify.yml` がビルドを失敗させる。
+   ブラウザが付けた `x-diary-user` は流さず、ブラウザが別のサイトからと告げる要求(`Sec-Fetch-Site`)は 403 にする。`NEXT_PUBLIC_DIARY_USER_POOL_*` が欠けていると、`amplify.yml` がビルドを失敗させる。
    それでも欠けたまま建った場合、流し先が公開の API(署名か合言葉の要る先)なら、route handler はログインなしで流さず 401 を返す
 2. API: 関数 URL は `AWS_IAM` で、Amplify の SSR のコンピュートロールの署名が無い要求は Lambda が起きる前に弾く。
    その上で合言葉(`x-diary-api-key`。Lambda の `DIARY_API_KEYS` の `gui=`)が合わない要求を 401 にする(`/api/ping` だけは通す)

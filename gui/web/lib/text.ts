@@ -6,6 +6,8 @@ export const T = {
   appDescription: "みんなの日記帳",
   loading: "Loading…",
   signInRequired: "Sign in required.",
+  crossSiteRejected: "Requests from other sites are not accepted.",
+  apiUnreachable: "Cannot reach the API. Try again later.",
   cannotReachApi: (error: string) => `Cannot reach API: ${error}`,
 
   nav: {
