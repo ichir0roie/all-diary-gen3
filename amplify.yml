@@ -1,0 +1,27 @@
+# AWS Amplify Hosting のビルド設定。画面(gui/web、Next.js)だけをモノレポの一つのアプリとして建てる。
+# Amplify のアプリの環境変数に AMPLIFY_MONOREPO_APP_ROOT=gui/web、DIARY_API_URL、DIARY_API_KEY、
+# NEXT_PUBLIC_DIARY_USER_POOL_ID、NEXT_PUBLIC_DIARY_USER_POOL_CLIENT_ID を置く(`.docs/aws-deploy.md`)。NEXT_PUBLIC_* は next build が埋め込む。
+version: 1
+applications:
+  - appRoot: gui/web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            # package-lock.json は npm 11 の新しい版で作る(手元では `npx -y npm@11 install …`)。npm 10 や古い npm 11(11.6 で確かめた)は
+            # optional の依存(@emnapi/* など)を lock から落とすことがあり、ここの npm ci がそれを食い違いとして拒む
+            - nvm install 24 && nvm use 24
+            - npm ci
+        build:
+          commands:
+            # サーバー側(`app/api/[...path]/route.ts`)が実行時に読む値は、ビルドの環境変数から .env.production に写す
+            - env | grep -E '^DIARY_(API_URL|API_KEY)=' >> .env.production || true
+            - npm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - "**/*"
+      cache:
+        paths:
+          - node_modules/**/*
+          - .next/cache/**/*

@@ -1,0 +1,52 @@
+from logging.config import fileConfig
+
+from alembic import context
+
+from db.schema import DATABASE_IAM_AUTH, Base, database_url, make_url_engine
+
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
+
+# db/schema.py と同じ db(DIARY_DATABASE_URL)を使う。RDS に当てるときは tool.aws.rds がマスターの URL を渡す。
+# URL の % は configparser の補間に食われるので重ねる
+config.set_main_option("sqlalchemy.url", database_url().replace("%", "%%"))
+
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# add your model's MetaData object here
+# for 'autogenerate' support
+target_metadata = Base.metadata
+
+
+def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    # 手元のふだんの接続(diary_app)は IAM 認証のトークンで繋ぐので、schema.py と同じ作り方で engine を作る
+    connectable = make_url_engine(database_url(), iam_auth=DATABASE_IAM_AUTH)
+
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()

@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+
+.env
+.env.*
+.venv
+
+# 取り出した以前の db ファイルなど、手元だけで使うもの
+tmp
+.pytest_cache
+.ruff_cache
+# 日記は RDS(本番)にだけ置く。以前の SQLite の db ファイルと、日記・コメントの CSV は入れない
+*.db
+*.sqlite
+*.sqlite3
+*.csv
+
+# gui.dev のブラウザのプロファイル、tool.aws.rds --serve のログ、Claude Code の手元だけの設定
+.brave-profile/
+.cache/
+.claude/settings.local.json

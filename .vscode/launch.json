@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python Debugger: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "PYTHONUTF8": "1",
+        "DIARY_DATABASE_URL": "postgresql+psycopg://diary_app@127.0.0.1:25432/diary?sslmode=require",
+        "DIARY_DATABASE_IAM_AUTH": "1",
+        "DIARY_DEV_DATABASE_URL": "postgresql+psycopg://diary:diary@127.0.0.1:55433/diary_dev"
+      },
+      "windows": {
+        "python": "${workspaceFolder}\\.venv\\Scripts\\python.exe"
+      }
+    }
+  ]
+}

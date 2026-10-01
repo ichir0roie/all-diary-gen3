@@ -1,0 +1,33 @@
+{
+  "name": "all-diary-gui",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "types": "openapi-typescript ../api/openapi.json -o lib/openapi.d.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-amplify/adapter-nextjs": "^1.8.0",
+    "@aws-amplify/ui-react": "^6.15.6",
+    "@aws-crypto/sha256-js": "^5.2.0",
+    "@aws-sdk/credential-provider-node": "^3.972.84",
+    "@smithy/signature-v4": "^5.7.4",
+    "aws-amplify": "^6.22.1",
+    "next": "16.3.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5"
+  }
+}
