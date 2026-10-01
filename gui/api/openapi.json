@@ -184,6 +184,324 @@
         }
       }
     },
+    "/api/diaries/similar": {
+      "post": {
+        "summary": "Search Similar Diaries",
+        "description": "`text` に似た日記の数と、似ている順の頭の何件か。",
+        "operationId": "search_similar_diaries_api_diaries_similar_post",
+        "parameters": [
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimilarSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarDiaries"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/on-this-day": {
+      "get": {
+        "summary": "List On This Day",
+        "description": "`day` と同じ月日の前後 `around_days` 日の日記を、年ごとに新しい年から。",
+        "operationId": "list_on_this_day_api_on_this_day_get",
+        "parameters": [
+          {
+            "name": "day",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Day"
+            }
+          },
+          {
+            "name": "around_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Around Days"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OnThisDayYear"
+                  },
+                  "title": "Response List On This Day Api On This Day Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diary-counts": {
+      "get": {
+        "summary": "Count Diaries By Day",
+        "description": "日本時間の暦の日ごとの、日記の件数と文字数。書いた日だけ。",
+        "operationId": "count_diaries_by_day_api_diary_counts_get",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DayCount"
+                  },
+                  "title": "Response Count Diaries By Day Api Diary Counts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/future-diaries": {
+      "get": {
+        "summary": "List Future Diaries",
+        "description": "まだ届いていない未来の日記の、届く時刻と書いた時刻。本文は返さない。",
+        "operationId": "list_future_diaries_api_future_diaries_get",
+        "parameters": [
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FutureDiaryRecord"
+                  },
+                  "title": "Response List Future Diaries Api Future Diaries Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Send Future Diary",
+        "operationId": "send_future_diary_api_future_diaries_post",
+        "parameters": [
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FutureDiaryCreateForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FutureDiaryRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/diaries/{diary_id}": {
       "get": {
         "summary": "Read Diary",
@@ -222,6 +540,123 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DiaryRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Diary",
+        "operationId": "update_diary_api_diaries__diary_id__patch",
+        "parameters": [
+          {
+            "name": "diary_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Diary Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiaryUpdateForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiaryRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Diary",
+        "description": "日記を、付いたコメントごと消す。",
+        "operationId": "delete_diary_api_diaries__diary_id__delete",
+        "parameters": [
+          {
+            "name": "diary_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Diary Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedDiary"
                 }
               }
             }
@@ -336,6 +771,122 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CommentRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Comment",
+        "operationId": "update_comment_api_comments__comment_id__patch",
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Comment Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentUpdateForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Comment",
+        "operationId": "delete_comment_api_comments__comment_id__delete",
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Comment Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedComment"
                 }
               }
             }
@@ -725,6 +1276,21 @@
         ],
         "title": "CommentRecord"
       },
+      "CommentUpdateForm": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "CommentUpdateForm"
+      },
       "CsvImportRequest": {
         "properties": {
           "text": {
@@ -737,6 +1303,67 @@
           "text"
         ],
         "title": "CsvImportRequest"
+      },
+      "DayCount": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          },
+          "diaries": {
+            "type": "integer",
+            "title": "Diaries"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "diaries",
+          "chars"
+        ],
+        "title": "DayCount",
+        "description": "日本時間の暦の日ごとの、日記の件数と文字数。"
+      },
+      "DeletedComment": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "diary_id": {
+            "type": "integer",
+            "title": "Diary Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "diary_id"
+        ],
+        "title": "DeletedComment"
+      },
+      "DeletedDiary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "comments": {
+            "type": "integer",
+            "title": "Comments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "comments"
+        ],
+        "title": "DeletedDiary"
       },
       "DiaryCreateForm": {
         "properties": {
@@ -775,6 +1402,17 @@
             "type": "string",
             "title": "Time"
           },
+          "written_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Written At"
+          },
           "text": {
             "type": "string",
             "title": "Text"
@@ -791,10 +1429,71 @@
         "required": [
           "id",
           "time",
+          "written_at",
           "text",
           "comments"
         ],
         "title": "DiaryRecord"
+      },
+      "DiaryUpdateForm": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "DiaryUpdateForm"
+      },
+      "FutureDiaryCreateForm": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          },
+          "deliver_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Deliver On"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "deliver_on"
+        ],
+        "title": "FutureDiaryCreateForm"
+      },
+      "FutureDiaryRecord": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "time": {
+            "type": "string",
+            "title": "Time"
+          },
+          "written_at": {
+            "type": "string",
+            "title": "Written At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "time",
+          "written_at"
+        ],
+        "title": "FutureDiaryRecord",
+        "description": "封をした未来の日記。届くまで本文は返さない。"
       },
       "HTTPValidationError": {
         "properties": {
@@ -910,6 +1609,91 @@
         ],
         "title": "LegacyUser",
         "description": "以前の db に日記を持つ人一人ぶん。`user_id` は以前の Cognito のユーザーの sub。"
+      },
+      "OnThisDayYear": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "diaries": {
+            "items": {
+              "$ref": "#/components/schemas/DiaryRecord"
+            },
+            "type": "array",
+            "title": "Diaries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "start_date",
+          "end_date",
+          "diaries"
+        ],
+        "title": "OnThisDayYear",
+        "description": "ある年の、同じ月日の前後の日記。"
+      },
+      "SimilarDiaries": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "diaries": {
+            "items": {
+              "$ref": "#/components/schemas/SimilarDiary"
+            },
+            "type": "array",
+            "title": "Diaries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "diaries"
+        ],
+        "title": "SimilarDiaries"
+      },
+      "SimilarDiary": {
+        "properties": {
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "diary": {
+            "$ref": "#/components/schemas/DiaryRecord"
+          }
+        },
+        "type": "object",
+        "required": [
+          "score",
+          "diary"
+        ],
+        "title": "SimilarDiary"
+      },
+      "SimilarSearchRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "SimilarSearchRequest"
       },
       "ValidationError": {
         "properties": {

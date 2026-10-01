@@ -47,6 +47,13 @@ button:hover { border-color: var(--accent); }
 button:disabled { opacity: 0.5; cursor: default; }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 button.ghost { background: transparent; }
+button.danger { background: var(--danger); color: var(--panel); border-color: var(--danger); }
+button.link { padding: 0; border: none; color: var(--accent); font-size: inherit; }
+button.link:hover { text-decoration: underline; }
+input[type="date"] { padding: 0.35rem 0.55rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.inline-field { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.9rem; }
+.inline-field select { width: auto; }
+.badge { display: inline-block; margin-left: 0.5rem; padding: 0 0.45rem; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 0.75rem; }
 
 .status { padding: 0.5rem 0.75rem; border-radius: 6px; margin: 0.5rem 0; font-size: 0.9rem; }
 .status.error { background: color-mix(in srgb, var(--danger) 12%, var(--panel)); color: var(--danger); }
@@ -54,8 +61,8 @@ button.ghost { background: transparent; }
 .status.info { background: var(--chip); color: var(--muted); }
 .hint { color: var(--muted); font-size: 0.85rem; margin: 0 0 0.75rem; }
 
-.nav { display: flex; align-items: center; gap: 1.2rem; padding: 0.5rem 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
-.nav a { color: var(--ink); }
+.nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 1.2rem; padding: 0.5rem 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.nav a { color: var(--ink); white-space: nowrap; }
 .nav a.active { color: var(--accent); font-weight: 600; }
 .nav .brand { font-weight: 700; font-size: 1.1rem; }
 .nav .sign-out { margin-left: auto; }
@@ -92,7 +99,13 @@ table.list code { font-size: 0.8rem; overflow-wrap: anywhere; }
 .diary-card .comments li + li { margin-top: 0.4rem; }
 
 .diary-input { position: sticky; bottom: 0; display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; padding: 0.6rem 0; background: var(--bg); }
-.diary-input textarea { flex: 1; min-width: 12rem; }
+.diary-input .editor { position: relative; flex: 1; min-width: 12rem; display: flex; }
+.diary-input .editor textarea { flex: 1; padding-bottom: 1.8rem; }
+/* 書いている文章に似た日記の数。書く欄の右下に重ねる */
+.diary-input .similar-count {
+  position: absolute; right: 0.45rem; bottom: 0.4rem; padding: 0 0.55rem; border-radius: 999px; font-size: 0.8rem;
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--ink); border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
 .diary-input .status { flex-basis: 100%; }
 
 /* モーダル(components/Modal.tsx) */
@@ -104,3 +117,58 @@ table.list code { font-size: 0.8rem; overflow-wrap: anywhere; }
 .modal .quote { color: var(--muted); font-size: 0.9rem; max-height: 10rem; overflow: auto; border-left: 3px solid var(--line); padding-left: 0.6rem; }
 .modal textarea { min-height: 8rem; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.6rem 0.9rem; border-top: 1px solid var(--line); }
+
+/* クリックした所に開くメニュー(components/PopupMenu.tsx)。モーダルより下、カードより上 */
+.popup-menu { position: fixed; z-index: 30; min-width: 9rem; display: flex; flex-direction: column; padding: 0.25rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); }
+.popup-menu button { border: none; background: transparent; text-align: left; padding: 0.4rem 0.7rem; border-radius: 5px; }
+.popup-menu button:hover { background: var(--chip); }
+.popup-menu button.danger { color: var(--danger); }
+.diary-card .comments li { cursor: pointer; border-radius: 6px; }
+.diary-card .comments li:hover { outline: 1px solid var(--accent); outline-offset: 2px; }
+.modal p { margin: 0; }
+.modal .field { margin-bottom: 0; }
+
+/* 似た日記の一覧(components/SimilarDiariesModal.tsx) */
+.similar-list, .pending-list { list-style: none; margin: 0; padding: 0; }
+.similar-list li { padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
+.similar-list .time { color: var(--muted); font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
+.similar-list .time .badge { margin-left: 0; }
+.similar-list .time .link { margin-left: auto; font-size: 0.8rem; }
+.similar-list .text { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 8rem; overflow: auto; }
+.pending-list li { color: var(--muted); font-size: 0.9rem; }
+
+/* 同じ日(app/on-this-day) */
+.on-this-day-page { max-width: 46rem; }
+.on-this-day-year { margin-bottom: 1.2rem; }
+.on-this-day-year h2 { display: flex; align-items: baseline; gap: 0.6rem; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding-bottom: 0.2rem; }
+.on-this-day-year h2 .span { font-weight: 400; font-size: 0.85rem; }
+.on-this-day-year h2 .open-week { margin-left: auto; font-weight: 400; font-size: 0.85rem; }
+.on-this-day-year .empty, .on-this-day-page > .empty, .heatmap-page > .empty { color: var(--muted); font-size: 0.9rem; }
+
+/* ヒートマップ(components/Heatmap.tsx)。一色の濃淡で、書かなかった日は地の色 */
+.heatmap-page .toolbar h1 { margin: 0 0.75rem 0 0; }
+.segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.segmented button { border: none; border-radius: 0; background: var(--panel); }
+.segmented button + button { border-left: 1px solid var(--line); }
+.segmented button.active { background: var(--accent); color: var(--accent-ink); }
+.heatmap { --cell: 12px; }
+.heatmap-head { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+.heatmap .readout { color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; min-height: 1.5em; }
+.heatmap .legend { display: flex; align-items: center; gap: 3px; color: var(--muted); font-size: 0.8rem; }
+.heatmap .legend .cell { width: var(--cell); height: var(--cell); }
+.heatmap-year { margin-bottom: 1rem; }
+.heatmap-year h2 { display: flex; align-items: baseline; gap: 0.75rem; }
+.heatmap-year h2 .total { color: var(--muted); font-weight: 400; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.heatmap-scroll { overflow-x: auto; padding-bottom: 0.25rem; }
+.heatmap-grid { display: grid; grid-template-rows: auto repeat(7, var(--cell)); gap: 2px; width: max-content; }
+.heatmap-grid .month, .heatmap-grid .weekday { color: var(--muted); font-size: 0.7rem; line-height: 1; white-space: nowrap; }
+.heatmap-grid .month { padding-bottom: 3px; }
+.heatmap-grid .weekday { padding-right: 4px; display: flex; align-items: center; }
+.heatmap .cell { display: inline-block; width: var(--cell); height: var(--cell); padding: 0; border: none; border-radius: 2px; cursor: pointer; }
+.heatmap .cell:hover, .heatmap .cell:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.heatmap .cell.today { outline: 1px solid var(--muted); outline-offset: 1px; }
+.heatmap .cell.level-0 { background: var(--chip); }
+.heatmap .cell.level-1 { background: color-mix(in srgb, var(--accent) 30%, var(--chip)); }
+.heatmap .cell.level-2 { background: color-mix(in srgb, var(--accent) 52%, var(--chip)); }
+.heatmap .cell.level-3 { background: color-mix(in srgb, var(--accent) 76%, var(--chip)); }
+.heatmap .cell.level-4 { background: var(--accent); }

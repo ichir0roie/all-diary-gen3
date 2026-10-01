@@ -1,9 +1,11 @@
 """API(`gui/api/app.py`)。エンドポイントごとに、なるべく多くの値を渡す一件を通す。"""
 from collections.abc import Iterator
+from datetime import datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 
+from data_access_logic.constants import JST
 from gui.api.app import app
 from tests.legacy_files import LEGACY, OLD_ME, OLD_OTHER
 
@@ -84,6 +86,78 @@ def test_comment_to_other_users_diary(client, book):
                            headers=as_user(book.user_id))
 
     assert response.status_code == 404
+
+
+def test_update_and_delete_diary(client, book):
+    updated = client.patch(f"/api/diaries/{book.diary_ids[1]}", json={"text": "書き直した"}, headers=as_user(book.user_id))
+    deleted = client.delete(f"/api/diaries/{book.diary_ids[1]}", headers=as_user(book.user_id))
+    read = client.get(f"/api/diaries/{book.diary_ids[1]}", headers=as_user(book.user_id))
+
+    assert (updated.status_code, updated.json()["text"]) == (200, "書き直した")
+    assert deleted.json() == {"id": book.diary_ids[1], "comments": 1}
+    assert read.status_code == 404
+
+
+def test_delete_other_users_diary(client, book):
+    response = client.delete(f"/api/diaries/{book.other_diary_id}", headers=as_user(book.user_id))
+
+    assert response.status_code == 404
+
+
+def test_update_and_delete_comment(client, book):
+    updated = client.patch(f"/api/comments/{book.comment_id}", json={"text": "書き直した"}, headers=as_user(book.user_id))
+    deleted = client.delete(f"/api/comments/{book.comment_id}", headers=as_user(book.user_id))
+
+    assert (updated.status_code, updated.json()["text"]) == (200, "書き直した")
+    assert deleted.json() == {"id": book.comment_id, "diary_id": book.diary_ids[1]}
+    assert client.get(f"/api/comments/{book.comment_id}", headers=as_user(book.user_id)).status_code == 404
+
+
+def test_future_diaries(client, book):
+    deliver_on = (datetime.now(JST) + timedelta(days=3)).date().isoformat()
+
+    sent = client.post("/api/future-diaries", json={"text": "三日後へ", "deliver_on": deliver_on}, headers=as_user(book.user_id))
+    listed = client.get("/api/future-diaries", headers=as_user(book.user_id))
+    read = client.get(f"/api/diaries/{sent.json()['id']}", headers=as_user(book.user_id))
+
+    assert sent.status_code == 201
+    assert listed.json() == [sent.json()]
+    assert read.status_code == 404
+
+
+def test_future_diary_to_past(client, book):
+    response = client.post("/api/future-diaries", json={"text": "過去へは送れない", "deliver_on": "2020-01-01"},
+                           headers=as_user(book.user_id))
+
+    assert response.status_code == 400
+
+
+def test_on_this_day(client, book):
+    response = client.get("/api/on-this-day", params={"day": "2025-07-02", "around_days": 1}, headers=as_user(book.user_id))
+
+    assert response.status_code == 200
+    assert [(year["year"], len(year["diaries"])) for year in response.json()] == [(2025, 0), (2024, 3)]
+
+
+def test_on_this_day_too_wide(client, book):
+    response = client.get("/api/on-this-day", params={"day": "2025-07-02", "around_days": 100}, headers=as_user(book.user_id))
+
+    assert response.status_code == 400
+
+
+def test_diary_counts(client, book):
+    response = client.get("/api/diary-counts", params={"end_date": "2024-07-02"}, headers=as_user(book.user_id))
+
+    assert [(day["day"], day["diaries"]) for day in response.json()] == [("2024-07-01", 1), ("2024-07-02", 1)]
+
+
+def test_similar_diaries(client, book):
+    created = client.post("/api/diaries", json={"text": "駅前の本屋に寄った"}, headers=as_user(book.user_id))
+    response = client.post("/api/diaries/similar", json={"text": "駅前の本屋"}, headers=as_user(book.user_id))
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
+    assert response.json()["diaries"][0]["diary"]["id"] == created.json()["id"]
 
 
 def test_csv(client, book):

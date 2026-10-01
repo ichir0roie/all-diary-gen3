@@ -1,51 +1,72 @@
 "use client";
 
-import { useState } from "react";
-import Modal from "@/components/Modal";
-import { commitComment, type CommentRecord, type DiaryRecord } from "@/lib/api";
-import { dateTime } from "@/lib/date";
-import { isSubmitKey } from "@/lib/keys";
+import { useState, type MouseEvent } from "react";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import PopupMenu, { type MenuItem } from "@/components/PopupMenu";
+import TextDialog from "@/components/TextDialog";
+import {
+  commitComment,
+  deleteComment,
+  deleteDiary,
+  updateComment,
+  updateDiary,
+  type CommentRecord,
+  type DiaryRecord,
+} from "@/lib/api";
+import { dateOnly, dateTime } from "@/lib/date";
 import { T } from "@/lib/text";
 
-/** 日記一件とコメント。押すとコメントを書くモーダルを開く。足したコメントはこのカードの中だけで並べ直す(週を読み直さない) */
-export default function DiaryCard({ diary }: { diary: DiaryRecord }) {
-  const [comments, setComments] = useState<CommentRecord[]>(diary.comments);
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+type Dialog =
+  | { kind: "comment" }
+  | { kind: "editDiary" }
+  | { kind: "deleteDiary" }
+  | { kind: "editComment"; comment: CommentRecord }
+  | { kind: "deleteComment"; comment: CommentRecord };
 
-  const close = () => {
-    setOpen(false);
-    setText("");
-    setError(null);
+type Props = {
+  diary: DiaryRecord;
+  // 消したあと、並べている側が一覧から除く
+  onDeleted: (diaryId: number) => void;
+};
+
+/** 日記一件とコメント。日記を押すと「コメント・書き直す・消す」、コメントを押すと「書き直す・消す」のメニューを開く。
+ * 書き足し・書き直しはこのカードの中だけで反映する(週を読み直さない) */
+export default function DiaryCard({ diary: initial, onDeleted }: Props) {
+  const [diary, setDiary] = useState(initial);
+  const [comments, setComments] = useState<CommentRecord[]>(initial.comments);
+  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
+  const [dialog, setDialog] = useState<Dialog | null>(null);
+  const close = () => setDialog(null);
+
+  // 文字を選ぼうとしてドラッグしたときは、メニューを開かない
+  const openMenu = (e: MouseEvent, items: MenuItem[]) => {
+    e.stopPropagation();
+    if (window.getSelection()?.toString()) return;
+    setMenu({ x: e.clientX, y: e.clientY, items });
   };
 
-  const canSave = !saving && text.trim() !== "";
-
-  const save = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      const comment = await commitComment(diary.id, text);
-      setComments([...comments, comment]);
-      close();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSaving(false);
-    }
-  };
+  const diaryItems: MenuItem[] = [
+    { label: T.diary.comment, onSelect: () => setDialog({ kind: "comment" }) },
+    { label: T.diary.edit, onSelect: () => setDialog({ kind: "editDiary" }) },
+    { label: T.diary.delete, onSelect: () => setDialog({ kind: "deleteDiary" }), danger: true },
+  ];
+  const commentItems = (comment: CommentRecord): MenuItem[] => [
+    { label: T.diary.edit, onSelect: () => setDialog({ kind: "editComment", comment }) },
+    { label: T.diary.delete, onSelect: () => setDialog({ kind: "deleteComment", comment }), danger: true },
+  ];
 
   return (
     <>
-      <article className="diary-card" onClick={() => setOpen(true)} title={T.comment.open}>
-        <div className="time">{dateTime(diary.time)}</div>
+      <article className="diary-card" onClick={(e) => openMenu(e, diaryItems)} title={T.diary.menu}>
+        <div className="time">
+          {dateTime(diary.time)}
+          {diary.written_at && <span className="badge">{T.diary.fromPast(dateOnly(diary.written_at))}</span>}
+        </div>
         <div className="text">{diary.text}</div>
         {comments.length > 0 && (
           <ul className="comments">
             {comments.map((comment) => (
-              <li key={comment.id}>
+              <li key={comment.id} onClick={(e) => openMenu(e, commentItems(comment))}>
                 <div className="time">{dateTime(comment.time)}</div>
                 <div className="text">{comment.text}</div>
               </li>
@@ -53,33 +74,64 @@ export default function DiaryCard({ diary }: { diary: DiaryRecord }) {
           </ul>
         )}
       </article>
-      {open && (
-        <Modal
+      {menu && <PopupMenu {...menu} onClose={() => setMenu(null)} />}
+      {dialog?.kind === "comment" && (
+        <TextDialog
           title={T.comment.title}
+          quote={diary.text}
+          placeholder={T.comment.placeholder}
           onClose={close}
-          actions={
-            <>
-              <button type="button" onClick={close}>{T.comment.cancel}</button>
-              <button type="button" className="primary" disabled={!canSave} onClick={save}>
-                {T.comment.save}
-              </button>
-            </>
-          }
-        >
-          <div className="quote">{diary.text}</div>
-          <textarea
-            value={text}
-            placeholder={T.comment.placeholder}
-            autoFocus
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (!isSubmitKey(e)) return;
-              e.preventDefault();
-              if (canSave) save();
-            }}
-          />
-          {error && <div className="status error">{error}</div>}
-        </Modal>
+          onSave={async (text) => {
+            const comment = await commitComment(diary.id, text);
+            setComments([...comments, comment]);
+          }}
+        />
+      )}
+      {dialog?.kind === "editDiary" && (
+        <TextDialog
+          title={T.diary.editTitle}
+          initialText={diary.text}
+          onClose={close}
+          onSave={async (text) => setDiary(await updateDiary(diary.id, text))}
+        />
+      )}
+      {dialog?.kind === "deleteDiary" && (
+        <ConfirmDialog
+          title={T.diary.deleteTitle}
+          message={T.diary.deleteConfirm(comments.length)}
+          quote={diary.text}
+          confirmLabel={T.diary.delete}
+          onClose={close}
+          onConfirm={async () => {
+            await deleteDiary(diary.id);
+            onDeleted(diary.id);
+          }}
+        />
+      )}
+      {dialog?.kind === "editComment" && (
+        <TextDialog
+          title={T.comment.editTitle}
+          quote={diary.text}
+          initialText={dialog.comment.text}
+          onClose={close}
+          onSave={async (text) => {
+            const updated = await updateComment(dialog.comment.id, text);
+            setComments(comments.map((comment) => (comment.id === updated.id ? updated : comment)));
+          }}
+        />
+      )}
+      {dialog?.kind === "deleteComment" && (
+        <ConfirmDialog
+          title={T.comment.deleteTitle}
+          message={T.comment.deleteConfirm}
+          quote={dialog.comment.text}
+          confirmLabel={T.diary.delete}
+          onClose={close}
+          onConfirm={async () => {
+            await deleteComment(dialog.comment.id);
+            setComments(comments.filter((comment) => comment.id !== dialog.comment.id));
+          }}
+        />
       )}
     </>
   );

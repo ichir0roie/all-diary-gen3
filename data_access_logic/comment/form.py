@@ -8,3 +8,7 @@ class CommentCreateForm(Form):
     text: str = Field(min_length=1)
     # 省けば書き込んだ時刻
     time: JstTime | None = None
+
+
+class CommentUpdateForm(Form):
+    text: str = Field(min_length=1)

@@ -10,6 +10,8 @@ export const T = {
 
   nav: {
     diary: "Diary",
+    onThisDay: "On This Day",
+    heatmap: "Heatmap",
     data: "Data",
     signOut: "Sign out",
   },
@@ -25,6 +27,66 @@ export const T = {
     placeholder: "Write today's diary (Ctrl+Enter to post)",
     post: "Post",
     posting: "Posting…",
+    menu: "Menu",
+    comment: "Comment",
+    edit: "Edit",
+    delete: "Delete",
+    editTitle: "Edit diary",
+    deleteTitle: "Delete diary",
+    deleteConfirm: (comments: number) =>
+      comments === 0 ? "Delete this diary?" : `Delete this diary and its ${comments} comment${comments === 1 ? "" : "s"}?`,
+    save: "Save",
+    cancel: "Cancel",
+    fromPast: (written: string) => `✉ Sent from ${written}`,
+    openWeek: "Open week",
+  },
+
+  similar: {
+    count: (n: number) => `≈ ${n}`,
+    hint: (n: number) => `${n} similar diar${n === 1 ? "y" : "ies"}. Click to list.`,
+    title: (n: number) => `Similar diaries (${n})`,
+    more: (shown: number, total: number) => `Showing the ${shown} most similar of ${total}.`,
+    score: (score: number) => `${Math.round(score * 100)}% match`,
+  },
+
+  future: {
+    open: "Send to future…",
+    title: "Send to the future",
+    hint: "The diary stays sealed until 0:00 (JST) of the day you pick, then appears on that day.",
+    deliverOn: "Deliver on",
+    placeholder: "Write to your future self",
+    send: "Send",
+    sending: "Sending…",
+    sent: (day: string) => `Sealed until ${day}.`,
+    pending: "On the way",
+    pendingItem: (deliver: string, written: string) => `${deliver} (written ${written})`,
+    nonePending: "Nothing on the way.",
+  },
+
+  onThisDay: {
+    dayEarlier: "Day -1",
+    dayLater: "Day +1",
+    today: "Today",
+    around: "Range",
+    aroundOption: (days: number) => (days === 0 ? "That day" : `±${days} days`),
+    heading: (monthDay: string) => `On ${monthDay}`,
+    yearsAgo: (year: number, ago: number) => (ago === 0 ? `${year} · this year` : `${year} · ${ago} year${ago === 1 ? "" : "s"} ago`),
+    span: (start: string, end: string) => `${start} – ${end}`,
+    noDiaryYet: "No diary yet.",
+  },
+
+  heatmap: {
+    title: "Heatmap",
+    metric: "Measure",
+    metrics: { diaries: "Diaries", chars: "Characters" },
+    yearTotal: (diaries: number, chars: number) => `${diaries.toLocaleString()} diaries · ${chars.toLocaleString()} chars`,
+    cell: (day: string, diaries: number, chars: number) => `${day}: ${diaries} diar${diaries === 1 ? "y" : "ies"}, ${chars.toLocaleString()} chars`,
+    readoutHint: "Hover a day to see its numbers. Click to open its week.",
+    less: "Less",
+    more: "More",
+    weekdays: ["", "Mon", "", "Wed", "", "Fri", ""],
+    months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    noDiaryYet: "No diary yet.",
   },
 
   comment: {
@@ -33,6 +95,9 @@ export const T = {
     save: "Save",
     cancel: "Cancel",
     open: "Add comment",
+    editTitle: "Edit comment",
+    deleteTitle: "Delete comment",
+    deleteConfirm: "Delete this comment?",
   },
 
   data: {

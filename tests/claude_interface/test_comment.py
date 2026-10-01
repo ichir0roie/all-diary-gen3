@@ -2,9 +2,11 @@
 import pytest
 
 from data_access_logic.comment.commit_comment import CommitComment
-from data_access_logic.comment.form import CommentCreateForm
+from data_access_logic.comment.delete_comment import DeleteComment
+from data_access_logic.comment.form import CommentCreateForm, CommentUpdateForm
 from data_access_logic.comment.list_comments import ListComments
 from data_access_logic.comment.read_comment import ReadComment
+from data_access_logic.comment.update_comment import UpdateComment
 from data_access_logic.entrypoint import UnknownRecordError
 
 
@@ -32,3 +34,27 @@ def test_commit_comment(shown, book):
 def test_commit_comment_to_other_users_diary(book):
     with pytest.raises(UnknownRecordError):
         CommitComment(book.user_id, CommentCreateForm(diary_id=book.other_diary_id, text="書けない")).run()
+
+
+def test_update_comment(shown, book):
+    result = shown(UpdateComment(book.user_id, book.comment_id, CommentUpdateForm(text="書き直したコメント")))
+
+    assert (result["text"], result["time"]) == ("書き直したコメント", "2024-07-02T22:00:00+09:00")
+    assert shown(ReadComment(book.user_id, book.comment_id))["text"] == "書き直したコメント"
+
+
+def test_update_other_users_comment(book):
+    with pytest.raises(UnknownRecordError):
+        UpdateComment(book.other_user_id, book.comment_id, CommentUpdateForm(text="書き直せない")).run()
+
+
+def test_delete_comment(shown, book):
+    result = shown(DeleteComment(book.user_id, book.comment_id))
+
+    assert result == {"id": book.comment_id, "diary_id": book.diary_ids[1]}
+    assert ListComments(book.user_id, book.diary_ids[1]).run() == []
+
+
+def test_delete_other_users_comment(book):
+    with pytest.raises(UnknownRecordError):
+        DeleteComment(book.other_user_id, book.comment_id).run()
