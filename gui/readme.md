@@ -66,8 +66,8 @@ DIARY_DATABASE_URL=$(infra_local/postgres.sh .venv/bin/python) DIARY_DATABASE_IA
 ```
 
 `/api/*` は Next.js の route handler が `DIARY_API_URL`(既定 `http://127.0.0.1:8766`)へ流すので、ブラウザから見ると同じオリジンになる。
-`DIARY_API_KEY` があれば、流すときに `x-diary-api-key` を付ける(API 側は `DIARY_API_KEYS` に呼ぶ側ごとの鍵を `gui=…` の形で持ち、
-合わない要求を 401 にする。公開の URL に置くとき用。`.docs/aws-deploy.md`)。
+流し先が Lambda の関数 URL なら、合言葉を SSM の `/diary/api-keys/gui` から読み、`x-diary-api-key` に付けて流す(`DIARY_API_KEY` があればそれを使う)。
+API 側は `DIARY_API_KEYS` に呼ぶ側ごとの鍵の SHA-256 を `gui=sha256:…` の形で持ち、合わない要求を 401 にする(`.docs/aws-deploy.md`)。
 
 ## API
 

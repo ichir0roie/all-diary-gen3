@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import hmac
 import logging
 import os
@@ -58,19 +59,39 @@ configure_logging()
 
 app = FastAPI(title="all-diary API", version="0.1.0")
 
-# 公開の URL(Lambda の関数 URL)に置くときの合言葉。呼ぶ側ごとに `名前=鍵` をカンマで区切って持つ(例: gui=…)。
+# 公開の URL(Lambda の関数 URL)に置くときの合言葉。呼ぶ側ごとに `名前=sha256:<鍵の SHA-256 の 16 進>` をカンマで区切って持つ。
+# 鍵の本体は SSM にだけ置き、ここ(Lambda の環境変数・CloudFormation の template)にはハッシュだけを置く。鍵は 32 バイトの乱数なので、
+# ハッシュから割り出せない。`名前=鍵` の平文も読む(ハッシュの形へ移るまでの間、古い環境変数のままでも止まらないように)。
 # 画面の Next.js のサーバー(`gui/web/app/api`)が付けて流す。空ならローカル向けとして確かめない
 API_KEY_HEADER = "x-diary-api-key"
+_SHA256_PREFIX = "sha256:"
+
+
+def _digest(key: str) -> str:
+    return hashlib.sha256(key.encode()).hexdigest()
 
 
 def _parse_api_keys(raw: str) -> dict[str, str]:
-    keys: dict[str, str] = {}
+    """呼ぶ側の名前ごとの、鍵の SHA-256(16 進)。"""
+    digests: dict[str, str] = {}
     for entry in filter(None, (entry.strip() for entry in raw.split(","))):
         name, _, key = (part.strip() for part in entry.partition("="))
         if not name or not key:
-            raise ValueError("DIARY_API_KEYS は `名前=鍵` をカンマで区切って書く")
-        keys[name] = key
-    return keys
+            raise ValueError("DIARY_API_KEYS は `名前=sha256:<16 進>` をカンマで区切って書く")
+        if key.startswith(_SHA256_PREFIX):
+            digest = key.removeprefix(_SHA256_PREFIX).lower()
+            if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+                raise ValueError(f"DIARY_API_KEYS の {name} の SHA-256 が 64 桁の 16 進でない")
+            digests[name] = digest
+        else:
+            digests[name] = _digest(key)
+    return digests
+
+
+def _caller(given: str, digests: dict[str, str]) -> str | None:
+    """`given` が合う呼ぶ側の名前。合わなければ None。"""
+    given_digest = _digest(given)
+    return next((name for name, digest in digests.items() if hmac.compare_digest(given_digest, digest)), None)
 
 
 _API_KEYS = _parse_api_keys(os.environ.get("DIARY_API_KEYS", ""))
@@ -81,8 +102,7 @@ _PUBLIC_PATHS = {"/api/ping"}
 @app.middleware("http")
 async def _require_api_key(request: Request, call_next):
     if _API_KEYS and request.url.path not in _PUBLIC_PATHS:
-        given = request.headers.get(API_KEY_HEADER, "").encode()
-        caller = next((name for name, key in _API_KEYS.items() if hmac.compare_digest(given, key.encode())), None)
+        caller = _caller(request.headers.get(API_KEY_HEADER, ""), _API_KEYS)
         if caller is None:
             return JSONResponse(status_code=401, content={"detail": f"{API_KEY_HEADER} が無いか違う"})
         logger.info(f"{caller}: {request.method} {request.url.path}")
@@ -110,7 +130,9 @@ async def _bad_value(_request: Request, error: ValueError):
 
 @app.exception_handler(OperationalError)
 async def _db_unreachable(_request: Request, error: OperationalError):
-    return JSONResponse(status_code=503, content={"detail": str(error.orig or error)})
+    # ドライバの文言は db のエンドポイントや内側の IP を含むので、ログにだけ出して画面には返さない
+    logger.error(f"db に繋げない: {error.orig or error}")
+    return JSONResponse(status_code=503, content={"detail": "db に繋げない"})
 
 
 @app.get("/api/ping")

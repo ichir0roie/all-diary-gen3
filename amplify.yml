@@ -1,5 +1,5 @@
 # AWS Amplify Hosting のビルド設定。画面(gui/web、Next.js)だけをモノレポの一つのアプリとして建てる。
-# Amplify のアプリの環境変数に AMPLIFY_MONOREPO_APP_ROOT=gui/web、DIARY_API_URL、DIARY_API_KEY、
+# Amplify のアプリの環境変数に AMPLIFY_MONOREPO_APP_ROOT=gui/web、DIARY_API_URL、
 # NEXT_PUBLIC_DIARY_USER_POOL_ID、NEXT_PUBLIC_DIARY_USER_POOL_CLIENT_ID を置く(`.docs/aws-deploy.md`)。NEXT_PUBLIC_* は next build が埋め込む。
 version: 1
 applications:
@@ -16,7 +16,9 @@ applications:
           commands:
             # ユーザープールの変数が欠けると画面がログインを掛けずに建つので、その形では建てない(route handler も流さずに止める)
             - test -n "$NEXT_PUBLIC_DIARY_USER_POOL_ID" && test -n "$NEXT_PUBLIC_DIARY_USER_POOL_CLIENT_ID"
-            # サーバー側(`app/api/[...path]/route.ts`)が実行時に読む値は、ビルドの環境変数から .env.production に写す
+            # サーバー側(`app/api/[...path]/route.ts`)が実行時に読む値は、ビルドの環境変数から .env.production に写す。
+            # 合言葉は環境変数に置かず、route handler が実行時に SSM から読む。DIARY_API_KEY を写すのは、環境変数に置いていた形から移る間だけ
+            # (.docs/aws-deploy.md の「合言葉を替える」)。移り終えたら DIARY_API_KEY を消し、ここも DIARY_API_URL だけにする
             - env | grep -E '^DIARY_(API_URL|API_KEY)=' >> .env.production || true
             - npm run build
       artifacts:

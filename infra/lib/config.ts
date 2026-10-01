@@ -55,6 +55,10 @@ export function describeDbInstance(instanceIdentifier: string): ExistingDb {
   if (!instance.MasterUserSecret?.SecretArn) {
     throw new Error(`${instanceIdentifier} のマスターのパスワードを RDS の管理(--manage-master-user-password)にしてから使う`);
   }
+  // 暗号化は作ったあとに切り替えられない(暗号化したスナップショットから建て直す)ので、止めずに知らせるだけにする
+  if (!instance.StorageEncrypted) {
+    console.warn(`${instanceIdentifier} のストレージが暗号化されていない(.docs/security.md の「残っている課題」)`);
+  }
   return {
     vpcId: instance.DBSubnetGroup.VpcId,
     endpoint: instance.Endpoint.Address,

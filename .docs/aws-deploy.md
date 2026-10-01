@@ -105,7 +105,8 @@ GitHub の OIDC プロバイダはアカウントに一つしか作れない。a
 
 ## 最初に建てる手順
 
-1. API の合言葉を SSM の SecureString に作る。`infra/` は synth のときにこれを読むので、一番初めに作る
+1. API の合言葉を SSM の SecureString に作る。`infra/` は synth のときにこれを読む(Lambda にはハッシュだけを渡す)ので、一番初めに作る。
+   鍵の本体が置かれるのはここだけで、画面のサーバーも実行時にここから読む
 
    ```
    aws ssm put-parameter --name /diary/api-keys/gui --type SecureString --value "$(openssl rand -hex 32)"
@@ -139,12 +140,11 @@ GitHub の OIDC プロバイダはアカウントに一つしか作れない。a
 | --- | --- |
 | `AMPLIFY_MONOREPO_APP_ROOT` | `gui/web` |
 | `DIARY_API_URL` | SSM の `/diary/api/function-url`(末尾の `/` は無くてよい) |
-| `DIARY_API_KEY` | SSM の `/diary/api-keys/gui` |
 | `NEXT_PUBLIC_DIARY_USER_POOL_ID` | SSM の `/diary/auth/user-pool-id` |
 | `NEXT_PUBLIC_DIARY_USER_POOL_CLIENT_ID` | SSM の `/diary/auth/user-pool-client-id` |
 
-`amplify.yml` がビルドのときに `DIARY_API_URL`・`DIARY_API_KEY` を `.env.production` に写す(SSR のサーバーは実行時にコンソールの環境変数を
-読めないため)。`NEXT_PUBLIC_*` は秘密ではなく、`next build` がブラウザ向けのコードにも埋め込む。
+`amplify.yml` がビルドのときに `DIARY_API_URL` を `.env.production` に写す(SSR のサーバーは実行時にコンソールの環境変数を
+読めないため)。合言葉は環境変数に置かない。route handler が実行時に SSM の `/diary/api-keys/gui` を、手順 2 のコンピュートロールで読む。`NEXT_PUBLIC_*` は秘密ではなく、`next build` がブラウザ向けのコードにも埋め込む。
 `AMPLIFY_APP_ORIGIN` は置かない(置くと adapter-nextjs がサーバー側でログインする形に切り替わり、画面の Authenticator が使えなくなる)。
 
 4. 画面に入る人を Cognito に作る(画面からの登録は閉じてある)。仮のパスワードがメールで届き、最初のログインで替える:
@@ -154,20 +154,31 @@ GitHub の OIDC プロバイダはアカウントに一つしか作れない。a
 
 ## 守り
 
+秘密の置き場所の一覧、公開する前に手で整える設定、残っている課題は [security.md](security.md)。
+
 1. 画面: Cognito(`DiaryAuth`)にログインするまで中身を出さない(`gui/web/components/AuthGate.tsx`)。トークンはクッキーに置き、
    `/api/*` の route handler が adapter-nextjs で Cognito の公開鍵による署名を確かめてから、その人の sub を `x-diary-user` に入れて流す。
-   ブラウザが付けた `x-diary-user` は流さない。`NEXT_PUBLIC_DIARY_USER_POOL_*` が欠けていると、`amplify.yml` がビルドを失敗させる。
+   ブラウザが付けた `x-diary-user` は流さず、ブラウザが別のサイトからと告げる要求(`Sec-Fetch-Site`)は 403 にする。`NEXT_PUBLIC_DIARY_USER_POOL_*` が欠けていると、`amplify.yml` がビルドを失敗させる。
    それでも欠けたまま建った場合、流し先が公開の API(署名か合言葉の要る先)なら、route handler はログインなしで流さず 401 を返す
 2. API: 関数 URL は `AWS_IAM` で、Amplify の SSR のコンピュートロールの署名が無い要求は Lambda が起きる前に弾く。
-   その上で合言葉(`x-diary-api-key`。Lambda の `DIARY_API_KEYS` の `gui=`)が合わない要求を 401 にする(`/api/ping` だけは通す)
+   その上で合言葉(`x-diary-api-key`)が合わない要求を 401 にする(`/api/ping` だけは通す)。Lambda の `DIARY_API_KEYS` には鍵の SHA-256 だけを
+   `gui=sha256:<16 進>` の形で置き、届いた鍵のハッシュと比べるので、CloudFormation の template や Lambda の設定に鍵の本体は載らない
 3. db: Lambda が使うロール `diary_app` には行の読み書き(DML)だけを許す。API に任意の SQL を受ける口は作らず、入口は必ず `user_id` で行を絞る。
    RDS の自動バックアップを 7 日保ち、削除保護を掛ける
 
 合言葉を替える:
 
 1. `aws ssm put-parameter --name /diary/api-keys/gui --type SecureString --overwrite --value "$(openssl rand -hex 32)"`
-2. `infra` で `npx cdk deploy DiaryApi`。Lambda の環境変数が替わり、古い鍵はその時点で通らなくなる
-3. Amplify の `DIARY_API_KEY` を替えて建て直す
+2. `infra` で `npx cdk deploy DiaryApi`。Lambda の環境変数(ハッシュ)が替わり、古い鍵はその時点で通らなくなる
+3. 画面のサーバーは、読んだ鍵を 5 分だけ持つ。それまでの間は 502 になりうる。建て直しは要らない
+
+鍵を環境変数に写していた形(Amplify の `DIARY_API_KEY`、Lambda の `gui=<鍵>`)からは、次の順で移る。どの間も画面は止まらない
+(移る間は、API は平文の `gui=<鍵>` も読み、画面のサーバーは `DIARY_API_KEY` が写してあればそれを使う):
+
+1. `main` に入れる。GitHub Actions が Lambda のコードを、Amplify が画面を建て直す
+2. `infra` で `npx cdk deploy DiaryApi`(Lambda の環境変数がハッシュになり、コンピュートロールが SSM を読めるようになる)
+3. Amplify の環境変数 `DIARY_API_KEY` を消して建て直す(以降は SSM から読む)
+4. 上の手順で鍵を替える(古い鍵が CloudFormation の template の履歴や前のビルドの成果物に残っているため)
 
 ## ローカルとの違い
 
@@ -176,4 +187,4 @@ GitHub の OIDC プロバイダはアカウントに一つしか作れない。a
 | db | 同じ RDS(踏み台越しの転送、`diary_app` の IAM 認証)か、手元の開発用の db | RDS for PostgreSQL(db `diary`。VPC の中から、`diary_app` の IAM 認証) |
 | `/api/*` の流し先 | `DIARY_API_URL` 既定 `http://127.0.0.1:8766` | Lambda の関数 URL(SigV4 の署名付き) |
 | ログイン | 無し(`NEXT_PUBLIC_DIARY_USER_POOL_*` が空)。`DIARY_LOCAL_USER_ID` の人として流す | Cognito |
-| 合言葉 | 無し(`DIARY_API_KEY` 空) | 有り |
+| 合言葉 | 無し(`DIARY_API_KEY` 空) | 有り(SSM の `/diary/api-keys/gui`。画面のサーバーが実行時に読む) |

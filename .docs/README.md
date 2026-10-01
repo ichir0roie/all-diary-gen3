@@ -7,6 +7,7 @@
 | [postgres.md](postgres.md) | PostgreSQL の db の作り方、開発・テスト用の手元の db、時刻の持ち方 |
 | [aws-deploy.md](aws-deploy.md) | AWS に置く形(Amplify の画面 / Lambda Web Adapter の API / RDS / Cognito)、`infra/` の CDK、手元から db へ繋ぐ道(`tool.aws.rds`) |
 | [ci-cd.md](ci-cd.md) | GitHub から Lambda・Amplify への自動デプロイ(OIDC・変数・マイグレーションの流し方) |
+| [security.md](security.md) | 秘密の置き場所と替え方、層ごとの守り、公開する前に手で整える設定、残っている課題 |
 | [migration.md](migration.md) | 以前の二つのリポジトリ(`all_diary_front` / `all_diary_backend`)からの移し方と、変えたこと |
 
 ## 全体の形
