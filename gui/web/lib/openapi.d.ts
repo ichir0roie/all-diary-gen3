@@ -59,6 +59,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diaries/similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search Similar Diaries
+         * @description `text` に似た日記の数と、似ている順の頭の何件か。
+         */
+        post: operations["search_similar_diaries_api_diaries_similar_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/on-this-day": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List On This Day
+         * @description `day` と同じ月日の前後 `around_days` 日の日記を、年ごとに新しい年から。
+         */
+        get: operations["list_on_this_day_api_on_this_day_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diary-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count Diaries By Day
+         * @description 日本時間の暦の日ごとの、日記の件数と文字数。書いた日だけ。
+         */
+        get: operations["count_diaries_by_day_api_diary_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/future-diaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Future Diaries
+         * @description まだ届いていない未来の日記の、届く時刻と書いた時刻。本文は返さない。
+         */
+        get: operations["list_future_diaries_api_future_diaries_get"];
+        put?: never;
+        /** Send Future Diary */
+        post: operations["send_future_diary_api_future_diaries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diaries/{diary_id}": {
         parameters: {
             query?: never;
@@ -68,6 +149,31 @@ export interface paths {
         };
         /** Read Diary */
         get: operations["read_diary_api_diaries__diary_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Diary
+         * @description 日記を、付いたコメントごと消す。
+         */
+        delete: operations["delete_diary_api_diaries__diary_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Diary */
+        patch: operations["update_diary_api_diaries__diary_id__patch"];
+        trace?: never;
+    };
+    "/api/diaries/{diary_id}/similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Similar Diaries
+         * @description 日記一件に似た日記の数と、似ている順の頭の何件か(元の日記は除く)。
+         */
+        get: operations["list_similar_diaries_api_diaries__diary_id__similar_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -104,10 +210,12 @@ export interface paths {
         get: operations["read_comment_api_comments__comment_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Comment */
+        delete: operations["delete_comment_api_comments__comment_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update Comment */
+        patch: operations["update_comment_api_comments__comment_id__patch"];
         trace?: never;
     };
     "/api/comments": {
@@ -215,10 +323,44 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** CommentUpdateForm */
+        CommentUpdateForm: {
+            /** Text */
+            text: string;
+        };
         /** CsvImportRequest */
         CsvImportRequest: {
             /** Text */
             text: string;
+        };
+        /**
+         * DayCount
+         * @description 日本時間の暦の日ごとの、日記の件数と文字数。
+         */
+        DayCount: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Diaries */
+            diaries: number;
+            /** Chars */
+            chars: number;
+        };
+        /** DeletedComment */
+        DeletedComment: {
+            /** Id */
+            id: number;
+            /** Diary Id */
+            diary_id: number;
+        };
+        /** DeletedDiary */
+        DeletedDiary: {
+            /** Id */
+            id: number;
+            /** Comments */
+            comments: number;
         };
         /** DiaryCreateForm */
         DiaryCreateForm: {
@@ -233,10 +375,39 @@ export interface components {
             id: number;
             /** Time */
             time: string;
+            /** Written At */
+            written_at: string | null;
             /** Text */
             text: string;
             /** Comments */
             comments: components["schemas"]["CommentRecord"][];
+        };
+        /** DiaryUpdateForm */
+        DiaryUpdateForm: {
+            /** Text */
+            text: string;
+        };
+        /** FutureDiaryCreateForm */
+        FutureDiaryCreateForm: {
+            /** Text */
+            text: string;
+            /**
+             * Deliver On
+             * Format: date
+             */
+            deliver_on: string;
+        };
+        /**
+         * FutureDiaryRecord
+         * @description 封をした未来の日記。届くまで本文は返さない。
+         */
+        FutureDiaryRecord: {
+            /** Id */
+            id: number;
+            /** Time */
+            time: string;
+            /** Written At */
+            written_at: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -282,6 +453,44 @@ export interface components {
             first_time: string;
             /** Last Time */
             last_time: string;
+        };
+        /**
+         * OnThisDayYear
+         * @description ある年の、同じ月日の前後の日記。
+         */
+        OnThisDayYear: {
+            /** Year */
+            year: number;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Diaries */
+            diaries: components["schemas"]["DiaryRecord"][];
+        };
+        /** SimilarDiaries */
+        SimilarDiaries: {
+            /** Total */
+            total: number;
+            /** Diaries */
+            diaries: components["schemas"]["SimilarDiary"][];
+        };
+        /** SimilarDiary */
+        SimilarDiary: {
+            /** Score */
+            score: number;
+            diary: components["schemas"]["DiaryRecord"];
+        };
+        /** SimilarSearchRequest */
+        SimilarSearchRequest: {
+            /** Text */
+            text: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -416,6 +625,175 @@ export interface operations {
             };
         };
     };
+    search_similar_diaries_api_diaries_similar_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimilarSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimilarDiaries"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_on_this_day_api_on_this_day_get: {
+        parameters: {
+            query: {
+                day: string;
+                around_days?: number;
+            };
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnThisDayYear"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    count_diaries_by_day_api_diary_counts_get: {
+        parameters: {
+            query?: {
+                start_date?: string | null;
+                end_date?: string | null;
+            };
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayCount"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_future_diaries_api_future_diaries_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FutureDiaryRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_future_diary_api_future_diaries_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FutureDiaryCreateForm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FutureDiaryRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_diary_api_diaries__diary_id__get: {
         parameters: {
             query?: never;
@@ -436,6 +814,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiaryRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_diary_api_diaries__diary_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                diary_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedDiary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_diary_api_diaries__diary_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                diary_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiaryUpdateForm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiaryRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_similar_diaries_api_diaries__diary_id__similar_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                diary_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimilarDiaries"];
                 };
             };
             /** @description Validation Error */
@@ -494,6 +975,76 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_comment_api_comments__comment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                comment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedComment"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_comment_api_comments__comment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                comment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentUpdateForm"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

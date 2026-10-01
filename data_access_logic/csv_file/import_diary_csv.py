@@ -11,7 +11,7 @@ from db.schema import Diary
 
 
 class ImportDiaryCsv(CommitEntrypoint):
-    """日記の CSV(`id,text,time`)を `user_id` の人の日記として足す。CSV の id は `migration_id` に残し、
+    """日記の CSV(`id,text,time`。未来へ送った日記は `written_at` も)を `user_id` の人の日記として足す。CSV の id は `migration_id` に残し、
     コメントの CSV の `diary_id` はそれで日記を引く。時刻と本文が同じ日記は、CSV の中では一件にし、db に既にあれば足さない。"""
 
     def __init__(self, user_id: str, csv_text: str):
@@ -26,5 +26,6 @@ class ImportDiaryCsv(CommitEntrypoint):
             unique.setdefault((row.time, row.text), row)
         existing = existing_diaries(s, self.user_id, unique)
         added = [row for key, row in unique.items() if key not in existing]
-        s.add_all(Diary(user_id=self.user_id, migration_id=row.id, time=row.time, text=row.text) for row in added)
+        s.add_all(Diary(user_id=self.user_id, migration_id=row.id, time=row.time, written_at=row.written_at,
+                         text=row.text) for row in added)
         return Imported(added=len(added), skipped=len(rows) - len(added))

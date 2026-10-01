@@ -5,8 +5,7 @@ from sqlalchemy.orm import Session
 
 from data_access_logic.diary.record import DiaryRecord
 from data_access_logic.entrypoint import SessionEntrypoint, record_of
-from data_access_logic.query.common_query import own_row
-from db.schema import Diary
+from data_access_logic.query.common_query import own_diary
 
 
 class ReadDiary(SessionEntrypoint):
@@ -15,4 +14,4 @@ class ReadDiary(SessionEntrypoint):
         self.diary_id = diary_id
 
     def execute(self, s: Session) -> DiaryRecord:
-        return record_of(s, DiaryRecord, own_row(s, Diary, self.diary_id, self.user_id))
+        return record_of(s, DiaryRecord, own_diary(s, self.diary_id, self.user_id))

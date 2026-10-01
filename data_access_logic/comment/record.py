@@ -6,3 +6,8 @@ class CommentRecord(Material):
     diary_id: int
     time: JstTime
     text: str
+
+
+class DeletedComment(Material):
+    id: int
+    diary_id: int

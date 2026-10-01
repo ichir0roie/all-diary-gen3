@@ -6,6 +6,12 @@ export type DiaryRecord = components["schemas"]["DiaryRecord"];
 export type CommentRecord = components["schemas"]["CommentRecord"];
 export type Imported = components["schemas"]["Imported"];
 export type CsvKind = "diary" | "comment";
+export type DeletedDiary = components["schemas"]["DeletedDiary"];
+export type DeletedComment = components["schemas"]["DeletedComment"];
+export type FutureDiaryRecord = components["schemas"]["FutureDiaryRecord"];
+export type OnThisDayYear = components["schemas"]["OnThisDayYear"];
+export type DayCount = components["schemas"]["DayCount"];
+export type SimilarDiaries = components["schemas"]["SimilarDiaries"];
 
 export class ApiError extends Error {
   status: number;
@@ -50,6 +56,41 @@ export const commitDiary = (text: string) =>
 
 export const commitComment = (diaryId: number, text: string) =>
   api<CommentRecord>("/api/comments", { method: "POST", body: JSON.stringify({ diary_id: diaryId, text }) });
+
+export const updateDiary = (diaryId: number, text: string) =>
+  api<DiaryRecord>(`/api/diaries/${diaryId}`, { method: "PATCH", body: JSON.stringify({ text }) });
+
+/** 付いたコメントごと消す */
+export const deleteDiary = (diaryId: number) => api<DeletedDiary>(`/api/diaries/${diaryId}`, { method: "DELETE" });
+
+export const updateComment = (commentId: number, text: string) =>
+  api<CommentRecord>(`/api/comments/${commentId}`, { method: "PATCH", body: JSON.stringify({ text }) });
+
+export const deleteComment = (commentId: number) =>
+  api<DeletedComment>(`/api/comments/${commentId}`, { method: "DELETE" });
+
+/** `deliverOn`("YYYY-MM-DD"、日本時間)の 0 時に届く日記を送る。届くまで本文は読めない */
+export const sendFutureDiary = (text: string, deliverOn: string) =>
+  api<FutureDiaryRecord>("/api/future-diaries", { method: "POST", body: JSON.stringify({ text, deliver_on: deliverOn }) });
+
+/** まだ届いていない日記の、届く時刻と書いた時刻(本文は無い) */
+export const listFutureDiaries = () => api<FutureDiaryRecord[]>("/api/future-diaries");
+
+/** `day` と同じ月日の前後 `aroundDays` 日の日記を、年ごとに新しい年から */
+export const listOnThisDay = (day: string, aroundDays: number) =>
+  api<OnThisDayYear[]>(`/api/on-this-day?${new URLSearchParams({ day, around_days: String(aroundDays) })}`);
+
+/** 日ごとの日記の件数と文字数。書いた日だけ */
+export const countDiariesByDay = () => api<DayCount[]>("/api/diary-counts");
+
+export const readDiary = (diaryId: number) => api<DiaryRecord>(`/api/diaries/${diaryId}`);
+
+/** 日記一件に似た日記(元の日記は除く)。似ている順 */
+export const listSimilarDiaries = (diaryId: number) => api<SimilarDiaries>(`/api/diaries/${diaryId}/similar`);
+
+/** 文章に似た日記。似ている順 */
+export const searchSimilarDiaries = (text: string, signal?: AbortSignal) =>
+  api<SimilarDiaries>("/api/diaries/similar", { method: "POST", body: JSON.stringify({ text }), signal });
 
 export const importCsv = (kind: CsvKind, text: string) =>
   api<Imported>(`/api/csv/${kind}`, { method: "POST", body: JSON.stringify({ text }) });

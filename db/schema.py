@@ -33,8 +33,13 @@ class Post(Base):
 
 
 class Diary(Post):
+    """日記。未来へ送った日記(`written_at` がある行)は、`time`(届く時刻)が来るまで封をしておき、どの入口も読まない
+    (`data_access_logic/query/common_query.py` の `delivered`)。"""
 
     __tablename__ = "diary"
+
+    written_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), comment="未来へ送った日記の、書いた時刻。time は届く時刻。ふだんの日記は NULL", sort_order=40)
 
     # リレーションは読むときに `selectinload` などで明示して読む。読まずに触ったら、黙って空にせず止める
     comments: Mapped[list[Comment]] = relationship(

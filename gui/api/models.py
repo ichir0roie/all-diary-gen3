@@ -20,6 +20,11 @@ class CsvImportRequest(BaseModel):
     text: str
 
 
+class SimilarSearchRequest(BaseModel):
+    # 探す文章(書いている途中の日記)。長くなるので、クエリではなく本文で渡す
+    text: str
+
+
 # ファイルを本文にそのまま載せる要求(以前の SQLite の db ファイル)。読むのは `Request.body()` なので、OpenAPI にだけ形を書く
 FILE_BODY: dict[str, Any] = {
     "requestBody": {"required": True, "content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}}},

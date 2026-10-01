@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import FutureSendModal from "@/components/FutureSendModal";
 import { commitDiary } from "@/lib/api";
 import { isSubmitKey } from "@/lib/keys";
 import { T } from "@/lib/text";
 
-/** 日記を書く欄。書いた時刻は API が決める */
+/** 日記を書く欄。書いた時刻は API が決める。未来へ送るモーダルもここから開く */
 export default function DiaryInput({ onPosted }: { onPosted: () => void }) {
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [future, setFuture] = useState(false);
 
   const canPost = !posting && text.trim() !== "";
 
@@ -40,10 +42,12 @@ export default function DiaryInput({ onPosted }: { onPosted: () => void }) {
           if (canPost) post();
         }}
       />
+      <button type="button" onClick={() => setFuture(true)}>{T.future.open}</button>
       <button type="button" className="primary" disabled={!canPost} onClick={post}>
         {posting ? T.diary.posting : T.diary.post}
       </button>
       {error && <div className="status error">{error}</div>}
+      {future && <FutureSendModal initialText={text} onSent={() => setText("")} onClose={() => setFuture(false)} />}
     </div>
   );
 }

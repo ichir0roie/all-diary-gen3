@@ -19,27 +19,38 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from data_access_logic.comment.commit_comment import CommitComment
-from data_access_logic.comment.form import CommentCreateForm
+from data_access_logic.comment.delete_comment import DeleteComment
+from data_access_logic.comment.form import CommentCreateForm, CommentUpdateForm
 from data_access_logic.comment.list_comments import ListComments
 from data_access_logic.comment.read_comment import ReadComment
-from data_access_logic.comment.record import CommentRecord
+from data_access_logic.comment.record import CommentRecord, DeletedComment
+from data_access_logic.comment.update_comment import UpdateComment
 from data_access_logic.csv_file.export_comment_csv import ExportCommentCsv
 from data_access_logic.csv_file.export_diary_csv import ExportDiaryCsv
 from data_access_logic.csv_file.import_comment_csv import ImportCommentCsv
 from data_access_logic.csv_file.import_diary_csv import ImportDiaryCsv
 from data_access_logic.csv_file.record import Imported
 from data_access_logic.diary.commit_diary import CommitDiary
-from data_access_logic.diary.form import DiaryCreateForm
+from data_access_logic.diary.count_diaries_by_day import CountDiariesByDay
+from data_access_logic.diary.delete_diary import DeleteDiary
+from data_access_logic.diary.form import DiaryCreateForm, DiaryUpdateForm, FutureDiaryCreateForm
 from data_access_logic.diary.list_diaries import ListDiaries
+from data_access_logic.diary.list_future_diaries import ListFutureDiaries
+from data_access_logic.diary.list_on_this_day import ListOnThisDay
+from data_access_logic.diary.list_similar_diaries import ListSimilarDiaries
 from data_access_logic.diary.read_diary import ReadDiary
-from data_access_logic.diary.record import DiaryRecord
+from data_access_logic.diary.record import (DayCount, DeletedDiary, DiaryRecord, FutureDiaryRecord, OnThisDayYear,
+                                            SimilarDiaries)
+from data_access_logic.diary.search_similar_diaries import SearchSimilarDiaries
+from data_access_logic.diary.send_future_diary import SendFutureDiary
+from data_access_logic.diary.update_diary import UpdateDiary
 from data_access_logic.entrypoint import UnknownRecordError
 from data_access_logic.legacy_db.import_legacy_db import ImportLegacyDb
 from data_access_logic.legacy_db.record import LegacyDbSummary, LegacyImported
 from data_access_logic.legacy_db.summarize_legacy_db import SummarizeLegacyDb
 from data_access_logic.logs import configure_logging
 from db.schema import engine, get_env_session
-from gui.api.models import FILE_BODY, CsvImportRequest, CsvKind, Health
+from gui.api.models import FILE_BODY, CsvImportRequest, CsvKind, Health, SimilarSearchRequest
 from gui.api.user import user_id_dep
 
 logger = logging.getLogger(__name__)
@@ -118,6 +129,37 @@ def list_diaries(user_id: UserId, s: Db, start_date: date | None = None, end_dat
     return ListDiaries(user_id, start_date=start_date, end_date=end_date).execute(s)
 
 
+@app.post("/api/diaries/similar", response_model=SimilarDiaries)
+def search_similar_diaries(request: SimilarSearchRequest, user_id: UserId, s: Db) -> SimilarDiaries:
+    """`text` に似た日記の数と、似ている順の頭の何件か。"""
+    return SearchSimilarDiaries(user_id, request.text).execute(s)
+
+
+@app.get("/api/on-this-day", response_model=list[OnThisDayYear])
+def list_on_this_day(day: date, user_id: UserId, s: Db, around_days: int = 0) -> list[OnThisDayYear]:
+    """`day` と同じ月日の前後 `around_days` 日の日記を、年ごとに新しい年から。"""
+    return ListOnThisDay(user_id, day, around_days).execute(s)
+
+
+@app.get("/api/diary-counts", response_model=list[DayCount])
+def count_diaries_by_day(user_id: UserId, s: Db, start_date: date | None = None,
+                         end_date: date | None = None) -> list[DayCount]:
+    """日本時間の暦の日ごとの、日記の件数と文字数。書いた日だけ。"""
+    return CountDiariesByDay(user_id, start_date=start_date, end_date=end_date).execute(s)
+
+
+@app.get("/api/future-diaries", response_model=list[FutureDiaryRecord])
+def list_future_diaries(user_id: UserId, s: Db) -> list[FutureDiaryRecord]:
+    """まだ届いていない未来の日記の、届く時刻と書いた時刻。本文は返さない。"""
+    return ListFutureDiaries(user_id).execute(s)
+
+
+@app.post("/api/future-diaries", response_model=FutureDiaryRecord, status_code=201)
+def send_future_diary(diary: FutureDiaryCreateForm, user_id: UserId, s: Db) -> FutureDiaryRecord:
+    with s.begin():
+        return SendFutureDiary(user_id, diary).execute(s)
+
+
 @app.get("/api/diaries/{diary_id}", response_model=DiaryRecord)
 def read_diary(diary_id: int, user_id: UserId, s: Db) -> DiaryRecord:
     return ReadDiary(user_id, diary_id).execute(s)
@@ -127,6 +169,25 @@ def read_diary(diary_id: int, user_id: UserId, s: Db) -> DiaryRecord:
 def commit_diary(diary: DiaryCreateForm, user_id: UserId, s: Db) -> DiaryRecord:
     with s.begin():
         return CommitDiary(user_id, diary).execute(s)
+
+
+@app.patch("/api/diaries/{diary_id}", response_model=DiaryRecord)
+def update_diary(diary_id: int, diary: DiaryUpdateForm, user_id: UserId, s: Db) -> DiaryRecord:
+    with s.begin():
+        return UpdateDiary(user_id, diary_id, diary).execute(s)
+
+
+@app.delete("/api/diaries/{diary_id}", response_model=DeletedDiary)
+def delete_diary(diary_id: int, user_id: UserId, s: Db) -> DeletedDiary:
+    """日記を、付いたコメントごと消す。"""
+    with s.begin():
+        return DeleteDiary(user_id, diary_id).execute(s)
+
+
+@app.get("/api/diaries/{diary_id}/similar", response_model=SimilarDiaries)
+def list_similar_diaries(diary_id: int, user_id: UserId, s: Db) -> SimilarDiaries:
+    """日記一件に似た日記の数と、似ている順の頭の何件か(元の日記は除く)。"""
+    return ListSimilarDiaries(user_id, diary_id).execute(s)
 
 
 @app.get("/api/diaries/{diary_id}/comments", response_model=list[CommentRecord])
@@ -143,6 +204,18 @@ def read_comment(comment_id: int, user_id: UserId, s: Db) -> CommentRecord:
 def commit_comment(comment: CommentCreateForm, user_id: UserId, s: Db) -> CommentRecord:
     with s.begin():
         return CommitComment(user_id, comment).execute(s)
+
+
+@app.patch("/api/comments/{comment_id}", response_model=CommentRecord)
+def update_comment(comment_id: int, comment: CommentUpdateForm, user_id: UserId, s: Db) -> CommentRecord:
+    with s.begin():
+        return UpdateComment(user_id, comment_id, comment).execute(s)
+
+
+@app.delete("/api/comments/{comment_id}", response_model=DeletedComment)
+def delete_comment(comment_id: int, user_id: UserId, s: Db) -> DeletedComment:
+    with s.begin():
+        return DeleteComment(user_id, comment_id).execute(s)
 
 
 @app.post("/api/csv/{kind}", response_model=Imported)

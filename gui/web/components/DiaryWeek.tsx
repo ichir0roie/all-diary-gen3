@@ -37,7 +37,13 @@ export default function DiaryWeek({ endDay, reload }: Props) {
       {error && <div className="status error">{T.cannotReachApi(error)}</div>}
       {diaries === null && !error && <div className="status info">{T.loading}</div>}
       {diaries?.length === 0 && <div className="empty">{T.diary.empty}</div>}
-      {diaries?.map((diary) => <DiaryCard key={`${diary.id}-${diary.comments.length}`} diary={diary} />)}
+      {diaries?.map((diary) => (
+        <DiaryCard
+          key={`${diary.id}-${diary.comments.length}`}
+          diary={diary}
+          onDeleted={(id) => setDiaries(diaries.filter((other) => other.id !== id))}
+        />
+      ))}
     </section>
   );
 }

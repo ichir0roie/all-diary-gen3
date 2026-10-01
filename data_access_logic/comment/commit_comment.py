@@ -9,19 +9,19 @@ from data_access_logic.comment.form import CommentCreateForm
 from data_access_logic.comment.record import CommentRecord
 from data_access_logic.constants import JST
 from data_access_logic.entrypoint import CommitEntrypoint
-from data_access_logic.query.common_query import own_row
-from db.schema import Comment, Diary
+from data_access_logic.query.common_query import own_diary
+from db.schema import Comment
 
 
 class CommitComment(CommitEntrypoint):
-    """自分の日記にだけコメントを足せる。"""
+    """自分の日記にだけコメントを足せる。まだ届いていない未来の日記には足せない。"""
 
     def __init__(self, user_id: str, comment: CommentCreateForm):
         self.user_id = user_id
         self.comment = comment
 
     def execute(self, s: Session) -> CommentRecord:
-        own_row(s, Diary, self.comment.diary_id, self.user_id)
+        own_diary(s, self.comment.diary_id, self.user_id)
         record = Comment(user_id=self.user_id)
         self.comment.write_to(record)
         record.time = self.comment.time or datetime.now(JST)

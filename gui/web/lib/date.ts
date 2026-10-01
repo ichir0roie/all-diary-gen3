@@ -29,3 +29,16 @@ const timeFormat = new Intl.DateTimeFormat("ja-JP", {
 
 /** API の時刻(ISO 8601)を、日本時間の "YYYY/MM/DD HH:mm" にする */
 export const dateTime = (iso: string) => timeFormat.format(new Date(iso));
+
+const dayFormat = new Intl.DateTimeFormat("ja-JP", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** API の時刻(ISO 8601)を、日本時間の "YYYY/MM/DD" にする */
+export const dateOnly = (iso: string) => dayFormat.format(new Date(iso));
+
+/** API の時刻(ISO 8601)の、日本時間の暦の日("YYYY-MM-DD") */
+export const dayOf = (iso: string) => new Intl.DateTimeFormat("sv-SE", { timeZone: TIME_ZONE }).format(new Date(iso));
+
+/** 0 が日曜 */
+export const weekday = (day: string) => fromDay(day).getUTCDay();
+
+export const isDay = (value: string | null): value is string => value !== null && /^\d{4}-\d{2}-\d{2}$/.test(value);

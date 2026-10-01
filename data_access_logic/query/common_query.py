@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
 
-from sqlalchemy import ColumnElement
+from sqlalchemy import ColumnElement, or_
 from sqlalchemy.orm import Session
 
 from data_access_logic.constants import JST
@@ -27,3 +27,16 @@ def in_days(column, start_date: date | None, end_date: date | None) -> list[Colu
     if end_date is not None:
         conditions.append(column < datetime.combine(end_date + timedelta(days=1), time(), JST))
     return conditions
+
+
+def delivered() -> ColumnElement[bool]:
+    """封をした未来の日記(届く時刻の前)を除く。"""
+    return or_(Diary.written_at.is_(None), Diary.time <= datetime.now(JST))
+
+
+def own_diary(s: Session, diary_id: int, user_id: str) -> Diary:
+    """`own_row` に加え、まだ届いていない未来の日記も、無い行と同じに扱う(届くまで読むことも書き足すこともできない)。"""
+    diary = own_row(s, Diary, diary_id, user_id)
+    if diary.written_at is not None and diary.time > datetime.now(JST):
+        raise UnknownRecordError(f"id={diary_id} の diary が見つからない")
+    return diary

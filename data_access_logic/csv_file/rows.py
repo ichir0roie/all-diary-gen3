@@ -6,6 +6,7 @@ from __future__ import annotations
 import csv
 import io
 from collections.abc import Iterable
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -28,7 +29,13 @@ class CsvRow(BaseModel):
 
 
 class DiaryCsvRow(CsvRow):
-    pass
+    # 未来へ送った日記の、書いた時刻(`time` は届く時刻)。以前の CSV には無い列で、ふだんの日記は空
+    written_at: JstTime | None = None
+
+    @field_validator("written_at", mode="before")
+    @classmethod
+    def _blank_written_at(cls, value: object) -> object:
+        return None if value == "" else value
 
 
 class CommentCsvRow(CsvRow):
@@ -53,6 +60,8 @@ def write_rows(rows: Iterable[CsvRow], columns: list[str]) -> str:
     writer.writeheader()
     for row in rows:
         values = row.model_dump(include=set(columns))
-        values["time"] = row.time.astimezone(JST).strftime(CSV_TIME_FORMAT)
+        for name in ("time", "written_at"):
+            if isinstance(values.get(name), datetime):
+                values[name] = values[name].astimezone(JST).strftime(CSV_TIME_FORMAT)
         writer.writerow(values)
     return out.getvalue()
