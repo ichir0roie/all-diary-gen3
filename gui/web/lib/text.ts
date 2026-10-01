@@ -2,8 +2,8 @@
 // 日記・コメントの本文は文言ではなく値なので、ここには置かない。
 
 export const T = {
-  appName: "all diary",
-  appDescription: "Diary with comments, three years side by side",
+  appName: "All Diary",
+  appDescription: "みんなの日記帳",
   loading: "Loading…",
   signInRequired: "Sign in required.",
   cannotReachApi: (error: string) => `Cannot reach API: ${error}`,
@@ -22,14 +22,14 @@ export const T = {
     today: "Today",
     span: (year: string, start: string, end: string) => `${year}: ${start} – ${end}`,
     empty: "(no diary)",
-    placeholder: "Write today's diary",
+    placeholder: "Write today's diary (Ctrl+Enter to post)",
     post: "Post",
     posting: "Posting…",
   },
 
   comment: {
     title: "Comment",
-    placeholder: "Write a comment",
+    placeholder: "Write a comment (Ctrl+Enter to save)",
     save: "Save",
     cancel: "Cancel",
     open: "Add comment",

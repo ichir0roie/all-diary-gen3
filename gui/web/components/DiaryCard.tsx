@@ -4,6 +4,7 @@ import { useState } from "react";
 import Modal from "@/components/Modal";
 import { commitComment, type CommentRecord, type DiaryRecord } from "@/lib/api";
 import { dateTime } from "@/lib/date";
+import { isSubmitKey } from "@/lib/keys";
 import { T } from "@/lib/text";
 
 /** 日記一件とコメント。押すとコメントを書くモーダルを開く。足したコメントはこのカードの中だけで並べ直す(週を読み直さない) */
@@ -19,6 +20,8 @@ export default function DiaryCard({ diary }: { diary: DiaryRecord }) {
     setText("");
     setError(null);
   };
+
+  const canSave = !saving && text.trim() !== "";
 
   const save = async () => {
     setSaving(true);
@@ -57,14 +60,24 @@ export default function DiaryCard({ diary }: { diary: DiaryRecord }) {
           actions={
             <>
               <button type="button" onClick={close}>{T.comment.cancel}</button>
-              <button type="button" className="primary" disabled={saving || !text.trim()} onClick={save}>
+              <button type="button" className="primary" disabled={!canSave} onClick={save}>
                 {T.comment.save}
               </button>
             </>
           }
         >
           <div className="quote">{diary.text}</div>
-          <textarea value={text} placeholder={T.comment.placeholder} autoFocus onChange={(e) => setText(e.target.value)} />
+          <textarea
+            value={text}
+            placeholder={T.comment.placeholder}
+            autoFocus
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (!isSubmitKey(e)) return;
+              e.preventDefault();
+              if (canSave) save();
+            }}
+          />
           {error && <div className="status error">{error}</div>}
         </Modal>
       )}

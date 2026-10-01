@@ -49,7 +49,13 @@ export default function Home() {
           <DiaryWeek key={day} endDay={day} reload={reload} />
         ))}
       </div>
-      <DiaryInput onPosted={() => setReload(reload + 1)} />
+      <DiaryInput
+        onPosted={() => {
+          // 開いたまま日をまたいだあとでも、書いたばかりの日記が範囲に入るよう、今日を取り直す
+          setBaseDay(today());
+          setReload(reload + 1);
+        }}
+      />
     </div>
   );
 }
