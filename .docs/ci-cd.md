@@ -10,7 +10,7 @@
 
 1. `ruff check`(実行時の誤りだけを見る設定。`ruff.toml`)
 2. OIDC で AWS のロールを引き受ける(鍵を GitHub に置かない)
-3. `infra/lambda/Dockerfile` を `linux/amd64` で建て、ECR に `<commit の sha>` と `main` の二つの tag で push
+3. `infra/lambda/Dockerfile` を `linux/arm64` で建て、ECR に `<commit の sha>` と `main` の二つの tag で push
    (`--provenance=false`。Lambda は複数アーキの目録を受け付けない)
 4. `aws lambda update-function-code`(`<commit の sha>` の tag)→ 反映を待つ
 5. 秘密の `API_BASE_URL` があれば、SigV4 の署名を付けて `/api/ping` を叩いて確かめる

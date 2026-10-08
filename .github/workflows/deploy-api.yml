@@ -28,7 +28,7 @@ concurrency:
 jobs:
   deploy:
     if: vars.LAMBDA_FUNCTION_NAME != ''
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     env:
       IMAGE_TAG: ${{ github.sha }}
     steps:
@@ -54,7 +54,7 @@ jobs:
         env:
           REPOSITORY: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}
         run: |
-          docker buildx build --platform linux/amd64 --provenance=false \
+          docker buildx build --platform linux/arm64 --provenance=false \
             -f infra/lambda/Dockerfile -t "$REPOSITORY:${{ github.sha }}" -t "$REPOSITORY:main" --push .
           echo "IMAGE=$REPOSITORY:${{ github.sha }}" >> "$GITHUB_ENV"
 

@@ -2,7 +2,7 @@
 # Lambda Web Adapter(拡張として /opt/extensions に置く)が Lambda のイベントを HTTP に直して uvicorn へ流すので、
 # アプリは普段どおり uvicorn で起こすだけでよい。ビルドはリポジトリのルートを文脈にする:
 # https://github.com/aws/aws-lambda-web-adapter
-#   docker build --platform linux/amd64 --provenance=false -f infra/lambda/Dockerfile -t diary-api .
+#   docker build --platform linux/arm64 --provenance=false -f infra/lambda/Dockerfile -t diary-api .
 #
 # 使い方・環境変数は `.docs/aws-deploy.md`。
 FROM public.ecr.aws/docker/library/python:3.14-slim

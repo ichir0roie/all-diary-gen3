@@ -57,7 +57,7 @@ export class DiaryApiStack extends Stack {
     const fn = new lambda.DockerImageFunction(this, "Function", {
       functionName: api.functionName,
       code: lambda.DockerImageCode.fromEcr(repository, { tagOrDigest: api.imageTag }),
-      architecture: lambda.Architecture.X86_64,
+      architecture: lambda.Architecture.ARM_64,
       memorySize: 1024,
       timeout: Duration.seconds(30),
       // 署名を持つ呼ぶ側が暴れても、費用と db の接続数がこれ以上に膨らまないようにする
