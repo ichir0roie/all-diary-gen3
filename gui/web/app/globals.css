@@ -99,6 +99,9 @@ main:has(.diary-board-page), .diary-board-page { flex: 1; min-height: 0; display
 .diary-board-page .toolbar .hint { margin: 0 0 0 auto; }
 /* 足し消しした行の位置合わせは DiaryBoard が自分でするので、ブラウザのスクロールの位置合わせとは重ねない */
 .diary-board { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; overflow-anchor: none; }
+/* 描く行・列を足し消しするので、スクロールバーの位置と長さは盤のどこにいるかを表さない。出さずにホイール・トラックパッドで動かす */
+.diary-board { scrollbar-width: none; }
+.diary-board::-webkit-scrollbar { display: none; }
 .diary-board-row { display: flex; gap: 0.75rem; width: max-content; border-top: 1px solid var(--line); }
 .diary-board-cell { flex: 0 0 24rem; padding: 0.2rem 0 0.4rem; }
 .diary-board-cell .day, .diary-board-cell .loading { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
