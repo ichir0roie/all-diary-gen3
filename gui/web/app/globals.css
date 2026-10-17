@@ -50,7 +50,7 @@ button.ghost { background: transparent; }
 button.danger { background: var(--danger); color: var(--panel); border-color: var(--danger); }
 button.link { padding: 0; border: none; color: var(--accent); font-size: inherit; }
 button.link:hover { text-decoration: underline; }
-input[type="date"] { padding: 0.35rem 0.55rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+input[type="date"], input[type="time"] { padding: 0.35rem 0.55rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
 .inline-field { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.9rem; }
 .inline-field select { width: auto; }
 .badge { display: inline-block; margin-left: 0.5rem; padding: 0 0.45rem; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 0.75rem; }
@@ -170,3 +170,12 @@ table.list code { font-size: 0.8rem; overflow-wrap: anywhere; }
 .similar-item .meta { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.8rem; margin-bottom: 0.2rem; }
 .similar-item .meta .badge { margin-left: 0; }
 .similar-item .meta a { margin-left: auto; }
+
+/* 過去の日に書き足す(app/past) */
+.past-page { max-width: 46rem; }
+.past-input { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1rem; }
+.past-input textarea { flex: 1; min-width: 12rem; }
+.past-input .status { flex-basis: 100%; }
+.past-page h2 { display: flex; align-items: baseline; gap: 0.6rem; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding-bottom: 0.2rem; }
+.past-page h2 .open-week { margin-left: auto; font-weight: 400; font-size: 0.85rem; }
+.past-page .empty { color: var(--muted); font-size: 0.9rem; }

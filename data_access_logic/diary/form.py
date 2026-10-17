@@ -7,7 +7,7 @@ from data_access_logic.material import Form, JstTime
 
 class DiaryCreateForm(Form):
     text: str = Field(min_length=1)
-    # 省けば書き込んだ時刻
+    # 省けば書き込んだ時刻。今より後は選べない
     time: JstTime | None = None
 
 

@@ -50,9 +50,9 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 export const listDiaries = (startDate: string, endDate: string) =>
   api<DiaryRecord[]>(`/api/diaries?${new URLSearchParams({ start_date: startDate, end_date: endDate })}`);
 
-/** 時刻は API が書き込んだ時刻にする。 */
-export const commitDiary = (text: string) =>
-  api<DiaryRecord>("/api/diaries", { method: "POST", body: JSON.stringify({ text }) });
+/** `time`(ISO 8601)を省けば、時刻は API が書き込んだ時刻にする。今より後の時刻は API が断る */
+export const commitDiary = (text: string, time?: string) =>
+  api<DiaryRecord>("/api/diaries", { method: "POST", body: JSON.stringify({ text, time }) });
 
 export const commitComment = (diaryId: number, text: string) =>
   api<CommentRecord>("/api/comments", { method: "POST", body: JSON.stringify({ diary_id: diaryId, text }) });

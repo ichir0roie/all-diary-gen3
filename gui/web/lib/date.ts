@@ -8,6 +8,10 @@ const fromDay = (day: string) => new Date(`${day}T00:00:00Z`);
 /** 日本時間の今日。sv-SE の書式が "YYYY-MM-DD" になる */
 export const today = () => new Intl.DateTimeFormat("sv-SE", { timeZone: TIME_ZONE }).format(new Date());
 
+/** 日本時間の今の時刻を分まで。"YYYY-MM-DDTHH:mm"(`<input type="date">` と `<input type="time">` の値をつないだ形) */
+export const nowMinute = () =>
+  new Intl.DateTimeFormat("sv-SE", { timeZone: TIME_ZONE, dateStyle: "short", timeStyle: "short" }).format(new Date()).replace(" ", "T");
+
 export function addDays(day: string, days: number): string {
   const date = fromDay(day);
   date.setUTCDate(date.getUTCDate() + days);

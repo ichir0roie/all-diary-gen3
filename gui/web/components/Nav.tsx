@@ -8,6 +8,7 @@ import { T } from "@/lib/text";
 
 const LINKS = [
   { href: "/", label: T.nav.diary },
+  { href: "/past", label: T.nav.past },
   { href: "/on-this-day", label: T.nav.onThisDay },
   { href: "/heatmap", label: T.nav.heatmap },
   { href: "/similar", label: T.nav.similar },

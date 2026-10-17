@@ -12,6 +12,7 @@ export const T = {
 
   nav: {
     diary: "Diary",
+    past: "Past Day",
     onThisDay: "On This Day",
     heatmap: "Heatmap",
     similar: "Similar",
@@ -70,6 +71,17 @@ export const T = {
     pending: "On the way",
     pendingItem: (deliver: string, written: string) => `${deliver} (written ${written})`,
     nonePending: "Nothing on the way.",
+  },
+
+  past: {
+    title: "Write for a past day",
+    hint: "Add a diary you did not write on the day. It is placed at the day and time you pick. To write to a future day, use “Send to future…” on the Diary page.",
+    day: "Day",
+    time: "Time",
+    placeholder: "Write the diary of that day (Ctrl+Enter to post)",
+    notFuture: "Pick a time before now.",
+    posted: (day: string) => `Posted to ${day}.`,
+    onDay: (day: string) => `Diaries on ${day}`,
   },
 
   onThisDay: {
