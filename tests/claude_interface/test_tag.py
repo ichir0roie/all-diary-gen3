@@ -4,10 +4,13 @@ from pydantic import ValidationError
 
 from data_access_logic.comment.read_comment import ReadComment
 from data_access_logic.comment.set_comment_tag import SetCommentTag
+from data_access_logic.diary.commit_diary import CommitDiary
+from data_access_logic.diary.form import DiaryCreateForm
 from data_access_logic.diary.list_diaries import ListDiaries
 from data_access_logic.diary.list_tagged_diaries import ListTaggedDiaries
 from data_access_logic.diary.read_diary import ReadDiary
 from data_access_logic.diary.set_diary_tag import SetDiaryTag
+from data_access_logic.diary.tag_diaries_by_text import TagDiariesByText
 from data_access_logic.entrypoint import UnknownRecordError
 from data_access_logic.tag.commit_tag import CommitTag
 from data_access_logic.tag.delete_tag import DeleteTag
@@ -167,3 +170,49 @@ def test_list_other_users_tagged_diaries(shown, book):
 
     with pytest.raises(UnknownRecordError):
         shown(ListTaggedDiaries(book.user_id, [tag["id"], other_tag["id"]]))
+
+
+def test_list_diaries_mentioning_tag(shown, book):
+    # タグを作る前に書いた日記には、タグが付いていない
+    mentioned = shown(CommitDiary(book.user_id, DiaryCreateForm(text="得点は 100% だった", time="2024-07-05 08:00")))
+    shown(CommitDiary(book.user_id, DiaryCreateForm(text="得点は 100 点だった", time="2024-07-06 08:00")))
+    tag = shown(CommitTag(book.user_id, TagCreateForm(name="100%")))
+
+    result = shown(ListTaggedDiaries(book.user_id, [tag["id"]]))
+
+    # 本文に名前が含まれる日記も拾う。名前の % は文字として比べる
+    assert [(diary["id"], diary["tag"]) for diary in result] == [(mentioned["id"], None)]
+
+
+def test_commit_diary_tags_by_text(shown, book):
+    shown(CommitTag(book.user_id, TagCreateForm(name="旅行")))
+    overseas = shown(CommitTag(book.user_id, TagCreateForm(name="海外旅行")))
+    shown(CommitTag(book.other_user_id, TagCreateForm(name="計画")))
+
+    tagged = shown(CommitDiary(book.user_id, DiaryCreateForm(text="海外旅行の計画を立てた")))
+    untagged = shown(CommitDiary(book.user_id, DiaryCreateForm(text="一日中家にいた")))
+
+    # いくつも当てはまれば名前の長いタグを付け、他の人のタグは見ない
+    assert tagged["tag"] == overseas
+    assert untagged["tag"] is None
+
+
+def test_tag_diaries_by_text(shown, book):
+    # タグを作る前に書いた日記には、タグが付いていない
+    trip_plan = shown(CommitDiary(book.user_id, DiaryCreateForm(text="海外旅行の計画", time="2024-07-05 08:00")))
+    short_trip = shown(CommitDiary(book.user_id, DiaryCreateForm(text="近場へ旅行", time="2024-07-06 08:00")))
+    chosen = shown(CommitDiary(book.user_id, DiaryCreateForm(text="旅行の写真を整理", time="2024-07-07 08:00")))
+    others = shown(CommitDiary(book.other_user_id, DiaryCreateForm(text="旅行", time="2024-07-05 08:00")))
+    trip = shown(CommitTag(book.user_id, TagCreateForm(name="旅行")))
+    overseas = shown(CommitTag(book.user_id, TagCreateForm(name="海外旅行")))
+    photo = shown(CommitTag(book.user_id, TagCreateForm(name="写真")))
+    shown(SetDiaryTag(book.user_id, chosen["id"], TagChoiceForm(tag_id=photo["id"])))
+
+    result = shown(TagDiariesByText(book.user_id, [trip["id"]]))
+
+    # 選んだのが「旅行」でも、付けるのは日記を書くときと同じく名前の長いタグ。付いていたタグと、他の人の日記は変えない
+    assert result == {"diaries": 2}
+    assert [shown(ReadDiary(book.user_id, diary["id"]))["tag"] for diary in (trip_plan, short_trip, chosen)] == [
+        overseas, trip, photo]
+    assert shown(ReadDiary(book.other_user_id, others["id"]))["tag"] is None
+    assert shown(TagDiariesByText(book.user_id, [trip["id"]])) == {"diaries": 0}

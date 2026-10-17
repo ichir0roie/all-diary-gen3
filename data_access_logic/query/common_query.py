@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
 
-from sqlalchemy import ColumnElement, or_, select
+from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.orm import Session
 
 from data_access_logic.constants import JST
@@ -49,3 +49,24 @@ def refuse_taken_tag_name(s: Session, user_id: str, name: str, exclude_tag_id: i
         query = query.where(Tag.id != exclude_tag_id)
     if s.scalar(query) is not None:
         raise ValueError(f"タグ「{name}」は既にある")
+
+
+def own_tags(s: Session, user_id: str, tag_ids: list[int]) -> list[Tag]:
+    """`tag_ids` のタグ。他の人のタグが混ざれば、無いタグと同じに扱って止める(在ることを漏らさない)。"""
+    tags = list(s.scalars(select(Tag).where(Tag.id.in_(tag_ids), Tag.user_id == user_id)))
+    unknown = sorted(set(tag_ids) - {tag.id for tag in tags})
+    if unknown:
+        raise UnknownRecordError(f"id={unknown} の tag が見つからない")
+    return tags
+
+
+def tags_to_match(s: Session, user_id: str) -> list[Tag]:
+    """`user_id` の人のタグを、本文に当てはめる順に(名前の長いものから。「旅行」より「海外旅行」を先に)。"""
+    return list(s.scalars(select(Tag)
+                          .where(Tag.user_id == user_id)
+                          .order_by(func.char_length(Tag.name).desc(), Tag.name, Tag.id)))
+
+
+def tag_in_text(tags: list[Tag], text: str) -> Tag | None:
+    """`tags`(`tags_to_match` の順)のうち、`text` に名前が含まれる最初のタグ。"""
+    return next((tag for tag in tags if tag.name in text), None)

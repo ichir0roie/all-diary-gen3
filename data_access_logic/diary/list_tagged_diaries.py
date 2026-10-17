@@ -5,28 +5,26 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from data_access_logic.diary.record import DiaryRecord
-from data_access_logic.entrypoint import SessionEntrypoint, UnknownRecordError, loading
-from data_access_logic.query.common_query import delivered
-from db.schema import Comment, Diary, Tag
+from data_access_logic.entrypoint import SessionEntrypoint, loading
+from data_access_logic.query.common_query import delivered, own_tags
+from db.schema import Comment, Diary
 
 
 class ListTaggedDiaries(SessionEntrypoint):
-    """`tag_ids` のタグのどれかが、日記か、そのコメントのどれかに付いた日記を、コメント付きで新しい順に並べる。
-    まだ届いていない未来の日記は除く。"""
+    """`tag_ids` のタグのどれかが、日記か、そのコメントのどれかに付いた日記と、本文にそのタグの名前が含まれる日記を、
+    コメント付きで新しい順に並べる。まだ届いていない未来の日記は除く。"""
 
     def __init__(self, user_id: str, tag_ids: list[int]):
         self.user_id = user_id
         self.tag_ids = tag_ids
 
     def execute(self, s: Session) -> list[DiaryRecord]:
-        own_tag_ids = set(s.scalars(select(Tag.id).where(Tag.id.in_(self.tag_ids), Tag.user_id == self.user_id)))
-        # 他の人のタグも、無いタグと同じに扱う(在ることを漏らさない)
-        unknown = sorted(set(self.tag_ids) - own_tag_ids)
-        if unknown:
-            raise UnknownRecordError(f"id={unknown} の tag が見つからない")
-        commented = select(Comment.diary_id).where(Comment.tag_id.in_(own_tag_ids))
+        tags = own_tags(s, self.user_id, self.tag_ids)
+        tag_ids = [tag.id for tag in tags]
+        commented = select(Comment.diary_id).where(Comment.tag_id.in_(tag_ids))
+        mentioned = [Diary.text.contains(tag.name, autoescape=True) for tag in tags]
         query = (select(Diary)
                  .where(Diary.user_id == self.user_id, delivered(),
-                        or_(Diary.tag_id.in_(own_tag_ids), Diary.id.in_(commented)))
+                        or_(Diary.tag_id.in_(tag_ids), Diary.id.in_(commented), *mentioned))
                  .order_by(Diary.time.desc(), Diary.id.desc()))
         return [DiaryRecord.model_validate(row) for row in s.scalars(loading(query, DiaryRecord))]

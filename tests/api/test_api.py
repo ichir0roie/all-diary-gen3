@@ -247,6 +247,18 @@ def test_tags(client, book):
     assert (diary["tag"], diary["comments"][0]["tag"]) == (None, None)
 
 
+def test_tag_diaries_by_text(client, book):
+    tag = client.post("/api/tags", json={"name": "月 2 日"}, headers=as_user(book.user_id)).json()
+
+    tagged = client.post("/api/diaries/tag-by-text", json={"tag_ids": [tag["id"]]}, headers=as_user(book.user_id))
+    no_tag = client.post("/api/diaries/tag-by-text", json={"tag_ids": []}, headers=as_user(book.user_id))
+    diary = client.get(f"/api/diaries/{book.diary_ids[1]}", headers=as_user(book.user_id)).json()
+
+    assert (tagged.status_code, tagged.json()) == (200, {"diaries": 1})
+    assert no_tag.status_code == 422
+    assert diary["tag"] == tag
+
+
 def test_taken_tag_name(client, book):
     client.post("/api/tags", json={"name": "旅行"}, headers=as_user(book.user_id))
     response = client.post("/api/tags", json={"name": "旅行"}, headers=as_user(book.user_id))

@@ -53,6 +53,12 @@ class DiarySpan(Material):
     diaries: list[DiaryRecord]
 
 
+class TextTagged(Material):
+    """本文にタグの名前が含まれていたので、タグを付けた日記の数。"""
+
+    diaries: int
+
+
 class DayCount(Material):
     """日本時間の暦の日ごとの、日記の件数と文字数。"""
 

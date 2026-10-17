@@ -51,7 +51,10 @@ export interface paths {
          */
         get: operations["list_diaries_api_diaries_get"];
         put?: never;
-        /** Commit Diary */
+        /**
+         * Commit Diary
+         * @description 日記を書く。本文に自分のタグの名前が含まれていれば、そのタグを付ける。
+         */
         post: operations["commit_diary_api_diaries_post"];
         delete?: never;
         options?: never;
@@ -88,11 +91,31 @@ export interface paths {
         };
         /**
          * List Tagged Diaries
-         * @description `tag_id`(いくつでも)のどれかが、日記か、そのコメントに付いた日記を、コメント付きで新しい順に。
+         * @description `tag_id`(いくつでも)のどれかが、日記か、そのコメントに付いた日記と、本文にその名前が含まれる日記を、コメント付きで新しい順に。
          */
         get: operations["list_tagged_diaries_api_diaries_tagged_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diaries/tag-by-text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tag Diaries By Text
+         * @description 本文に `tag_ids` のタグのどれかの名前が含まれ、まだタグの無い日記にタグを付け、その数を返す。タグで探す画面が、探す前に呼ぶ。
+         */
+        post: operations["tag_diaries_by_text_api_diaries_tag_by_text_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -677,6 +700,11 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** TagIdsRequest */
+        TagIdsRequest: {
+            /** Tag Ids */
+            tag_ids: number[];
+        };
         /** TagRecord */
         TagRecord: {
             /** Id */
@@ -699,6 +727,14 @@ export interface components {
             diaries: number;
             /** Comments */
             comments: number;
+        };
+        /**
+         * TextTagged
+         * @description 本文にタグの名前が含まれていたので、タグを付けた日記の数。
+         */
+        TextTagged: {
+            /** Diaries */
+            diaries: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -888,6 +924,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiaryRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tag_diaries_by_text_api_diaries_tag_by_text_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagIdsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TextTagged"];
                 };
             };
             /** @description Validation Error */

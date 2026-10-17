@@ -5,6 +5,7 @@ import type { components } from "./openapi";
 export type DiaryRecord = components["schemas"]["DiaryRecord"];
 export type DaySpan = components["schemas"]["DaySpanForm"];
 export type DiarySpan = components["schemas"]["DiarySpan"];
+export type TextTagged = components["schemas"]["TextTagged"];
 export type CommentRecord = components["schemas"]["CommentRecord"];
 export type Imported = components["schemas"]["Imported"];
 export type CsvKind = "diary" | "comment";
@@ -88,7 +89,11 @@ export const setCommentTag = (commentId: number, tagId: number | null) =>
 /** タグを名前の順に、付けた日記・コメントの数と */
 export const listTags = () => api<TagUsage[]>("/api/tags");
 
-/** `tagIds` のタグのどれかが、日記か、そのコメントに付いた日記を、コメント付きで新しい順に */
+/** 本文に `tagIds` のタグのどれかの名前が含まれ、まだタグの無い日記にタグを付ける(付けるタグは日記を書くときと同じ決まり) */
+export const tagDiariesByText = (tagIds: number[]) =>
+  api<TextTagged>("/api/diaries/tag-by-text", { method: "POST", body: JSON.stringify({ tag_ids: tagIds }) });
+
+/** `tagIds` のタグのどれかが、日記か、そのコメントに付いた日記と、本文にその名前が含まれる日記を、コメント付きで新しい順に */
 export const listTaggedDiaries = (tagIds: number[]) =>
   api<DiaryRecord[]>(`/api/diaries/tagged?${new URLSearchParams(tagIds.map((id) => ["tag_id", String(id)]))}`);
 

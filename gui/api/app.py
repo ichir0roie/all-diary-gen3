@@ -44,10 +44,11 @@ from data_access_logic.diary.list_similar_diaries import ListSimilarDiaries
 from data_access_logic.diary.list_tagged_diaries import ListTaggedDiaries
 from data_access_logic.diary.read_diary import ReadDiary
 from data_access_logic.diary.record import (DayCount, DeletedDiary, DiaryRecord, DiarySpan, FutureDiaryRecord,
-                                            OnThisDayYear, SimilarDiaries)
+                                            OnThisDayYear, SimilarDiaries, TextTagged)
 from data_access_logic.diary.search_similar_diaries import SearchSimilarDiaries
 from data_access_logic.diary.send_future_diary import SendFutureDiary
 from data_access_logic.diary.set_diary_tag import SetDiaryTag
+from data_access_logic.diary.tag_diaries_by_text import TagDiariesByText
 from data_access_logic.diary.update_diary import UpdateDiary
 from data_access_logic.entrypoint import UnknownRecordError
 from data_access_logic.legacy_db.import_legacy_db import ImportLegacyDb
@@ -61,7 +62,8 @@ from data_access_logic.tag.list_tags import ListTags
 from data_access_logic.tag.record import DeletedTag, TagRecord, TagUsage
 from data_access_logic.tag.update_tag import UpdateTag
 from db.schema import engine, get_env_session
-from gui.api.models import FILE_BODY, CsvImportRequest, CsvKind, DiarySpansRequest, Health, SimilarSearchRequest
+from gui.api.models import (FILE_BODY, CsvImportRequest, CsvKind, DiarySpansRequest, Health, SimilarSearchRequest,
+                            TagIdsRequest)
 from gui.api.user import user_id_dep
 
 logger = logging.getLogger(__name__)
@@ -169,8 +171,15 @@ def list_diaries_in_spans(request: DiarySpansRequest, user_id: UserId, s: Db) ->
 
 @app.get("/api/diaries/tagged", response_model=list[DiaryRecord])
 def list_tagged_diaries(user_id: UserId, s: Db, tag_id: Annotated[list[int], Query(min_length=1)]) -> list[DiaryRecord]:
-    """`tag_id`(いくつでも)のどれかが、日記か、そのコメントに付いた日記を、コメント付きで新しい順に。"""
+    """`tag_id`(いくつでも)のどれかが、日記か、そのコメントに付いた日記と、本文にその名前が含まれる日記を、コメント付きで新しい順に。"""
     return ListTaggedDiaries(user_id, tag_id).execute(s)
+
+
+@app.post("/api/diaries/tag-by-text", response_model=TextTagged)
+def tag_diaries_by_text(request: TagIdsRequest, user_id: UserId, s: Db) -> TextTagged:
+    """本文に `tag_ids` のタグのどれかの名前が含まれ、まだタグの無い日記にタグを付け、その数を返す。タグで探す画面が、探す前に呼ぶ。"""
+    with s.begin():
+        return TagDiariesByText(user_id, request.tag_ids).execute(s)
 
 
 @app.post("/api/diaries/similar", response_model=SimilarDiaries)
@@ -211,6 +220,7 @@ def read_diary(diary_id: int, user_id: UserId, s: Db) -> DiaryRecord:
 
 @app.post("/api/diaries", response_model=DiaryRecord, status_code=201)
 def commit_diary(diary: DiaryCreateForm, user_id: UserId, s: Db) -> DiaryRecord:
+    """日記を書く。本文に自分のタグの名前が含まれていれば、そのタグを付ける。"""
     with s.begin():
         return CommitDiary(user_id, diary).execute(s)
 

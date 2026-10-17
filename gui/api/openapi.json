@@ -131,6 +131,7 @@
       },
       "post": {
         "summary": "Commit Diary",
+        "description": "日記を書く。本文に自分のタグの名前が含まれていれば、そのタグを付ける。",
         "operationId": "commit_diary_api_diaries_post",
         "parameters": [
           {
@@ -248,7 +249,7 @@
     "/api/diaries/tagged": {
       "get": {
         "summary": "List Tagged Diaries",
-        "description": "`tag_id`(いくつでも)のどれかが、日記か、そのコメントに付いた日記を、コメント付きで新しい順に。",
+        "description": "`tag_id`(いくつでも)のどれかが、日記か、そのコメントに付いた日記と、本文にその名前が含まれる日記を、コメント付きで新しい順に。",
         "operationId": "list_tagged_diaries_api_diaries_tagged_get",
         "parameters": [
           {
@@ -292,6 +293,63 @@
                     "$ref": "#/components/schemas/DiaryRecord"
                   },
                   "title": "Response List Tagged Diaries Api Diaries Tagged Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diaries/tag-by-text": {
+      "post": {
+        "summary": "Tag Diaries By Text",
+        "description": "本文に `tag_ids` のタグのどれかの名前が含まれ、まだタグの無い日記にタグを付け、その数を返す。タグで探す画面が、探す前に呼ぶ。",
+        "operationId": "tag_diaries_by_text_api_diaries_tag_by_text_post",
+        "parameters": [
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagIdsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TextTagged"
                 }
               }
             }
@@ -2381,6 +2439,23 @@
         ],
         "title": "TagCreateForm"
       },
+      "TagIdsRequest": {
+        "properties": {
+          "tag_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Tag Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tag_ids"
+        ],
+        "title": "TagIdsRequest"
+      },
       "TagRecord": {
         "properties": {
           "id": {
@@ -2436,6 +2511,20 @@
         ],
         "title": "TagUsage",
         "description": "タグと、それを付けた日記・コメントの数。"
+      },
+      "TextTagged": {
+        "properties": {
+          "diaries": {
+            "type": "integer",
+            "title": "Diaries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "diaries"
+        ],
+        "title": "TextTagged",
+        "description": "本文にタグの名前が含まれていたので、タグを付けた日記の数。"
       },
       "ValidationError": {
         "properties": {

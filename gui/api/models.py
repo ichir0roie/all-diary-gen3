@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from data_access_logic.diary.form import DaySpanForm
 
@@ -30,6 +30,11 @@ class SimilarSearchRequest(BaseModel):
 class DiarySpansRequest(BaseModel):
     # 読む日付の範囲。年ごとの列の分をまとめて渡すので、クエリではなく本文で渡す
     spans: list[DaySpanForm]
+
+
+class TagIdsRequest(BaseModel):
+    # タグで探す画面で選んだタグ
+    tag_ids: list[int] = Field(min_length=1)
 
 
 # ファイルを本文にそのまま載せる要求(以前の SQLite の db ファイル)。読むのは `Request.body()` なので、OpenAPI にだけ形を書く

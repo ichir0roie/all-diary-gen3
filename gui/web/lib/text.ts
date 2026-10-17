@@ -152,14 +152,15 @@ export const T = {
 
   tagSearch: {
     title: "Tag Search",
-    hint: "Choose one or more tags. Lists the diaries that have any of them, on the diary itself or on one of its comments. Newest first.",
+    hint: "Choose one or more tags. Lists the diaries that have any of them (on the diary itself or on one of its comments) or mention its name, newest first. Untagged diaries that mention a tag's name get the tag when you search, and so does a new diary.",
     noTagYet: "No tag yet. Press Edit to create one.",
     choose: "Choose a tag to list its diaries.",
     clear: "Clear",
     edit: "Edit",
     done: "Done",
     found: (diaries: number) => `${diaries} diar${diaries === 1 ? "y" : "ies"}`,
-    none: "No diary has these tags.",
+    none: "No diary has or mentions these tags.",
+    autoTagged: (diaries: number) => `Tagged ${diaries} diar${diaries === 1 ? "y" : "ies"} that mention${diaries === 1 ? "s" : ""} the tag.`,
   },
 
   comment: {

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import DiaryCard from "@/components/DiaryCard";
 import TagEditor from "@/components/TagEditor";
-import { listTaggedDiaries, listTags, type DiaryRecord, type TagUsage } from "@/lib/api";
+import { listTaggedDiaries, listTags, tagDiariesByText, type DiaryRecord, type TagUsage } from "@/lib/api";
 import { dayOf } from "@/lib/date";
 import { T } from "@/lib/text";
 
-/** 今あるタグを押して選び(いくつでも)、選んだタグのどれかが付いた日記を新しい順に並べる。
+/** 今あるタグを押して選び(いくつでも)、選んだタグのどれかが付いた日記と、本文にその名前が含まれる日記を新しい順に並べる。
  * 一覧の右の「Edit」で、タグを作る・名前を変える・消す表に切り替える。
  * `/tag-search?tag=ID&tag=ID` はそのタグを選んだところから出す */
 export default function TagSearch() {
@@ -95,13 +95,19 @@ export default function TagSearch() {
   );
 }
 
+/** 選んだタグの日記。読む前に、本文にタグの名前があってタグの無い日記へタグを付ける(並べた日記にそのタグが出るように) */
 function TaggedDiaries({ tagIds }: { tagIds: number[] }) {
   const [diaries, setDiaries] = useState<DiaryRecord[] | null>(null);
+  const [tagged, setTagged] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let current = true;
-    listTaggedDiaries(tagIds)
+    tagDiariesByText(tagIds)
+      .then((result) => {
+        if (current) setTagged(result.diaries);
+        return listTaggedDiaries(tagIds);
+      })
       .then((found) => current && setDiaries(found))
       .catch((e) => current && setError(e.message));
     return () => {
@@ -116,6 +122,7 @@ function TaggedDiaries({ tagIds }: { tagIds: number[] }) {
       {diaries && (
         <>
           <h2>{T.tagSearch.found(diaries.length)}</h2>
+          {tagged > 0 && <div className="status ok">{T.tagSearch.autoTagged(tagged)}</div>}
           {diaries.length === 0 && <div className="empty">{T.tagSearch.none}</div>}
           {diaries.map((diary) => (
             <div key={`${diary.id}-${diary.comments.length}`} className="tag-search-item">
