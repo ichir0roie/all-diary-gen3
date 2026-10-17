@@ -9,8 +9,13 @@
 - テスト用の db は本番を写さず、`schema.py` から空の db を作る(日記は人の書いたものなので、手元にも写さない)。
   行はテストごとに `conftest.py` の `book` が、毎回新しい `user_id` で足す。前のテストの行が残っていても混ざらない
 - `conftest.py` はテストの始めに `tool.test.ensure_test_db` を回す。テスト用の db が無いときだけ作る。
-  マイグレーションを足したあと、版の食い違いの警告が出たら `.venv/bin/python -m tool.test.recreate_db` で作り直す
-  (VS Code はタスク「test db recreate」)
+  マイグレーションを足したあとなどで版の食い違いの警告が出たら、Claude が次のどちらかを回してから続ける(VS Code のタスクには無い)
+
+  | コマンド | すること |
+  | --- | --- |
+  | `.venv/bin/python -m tool.test.recreate_db` | `diary_test` を消し、`schema.py` から空の db を作り直す。ふつうはこちら |
+  | `.venv/bin/python -m tool.test.upgrade_db` | 行を残したまま `alembic upgrade head` で上げる。マイグレーションそのものを試すとき |
+
 - 入口のテストは `tests/claude_interface/`(claude と同じく `show()` を呼ぶ)、API のテストは `tests/api/`(TestClient。
   画面の route handler の代わりに `x-diary-user` を付ける)
 - alembic のテスト、ダウングレードのテストはやらない

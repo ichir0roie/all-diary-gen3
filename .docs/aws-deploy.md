@@ -96,7 +96,7 @@ GitHub の OIDC プロバイダはアカウントに一つしか作れない。a
 
 | 使い方 | 繋ぐ db のロール | 認証 |
 | --- | --- | --- |
-| `--serve`(ふだんの読み書き。SessionStart フックと VS Code のタスク「db tunnel」が起こす) | `diary_app`(行の読み書きだけ) | IAM データベース認証。`DIARY_DATABASE_URL=postgresql+psycopg://diary_app@127.0.0.1:25432/diary?sslmode=require` と `DIARY_DATABASE_IAM_AUTH=1` を渡した python が、繋ぐたびにトークンを作る。トークンは RDS の本来のエンドポイント(SSM の `/diary/db/endpoint`)に宛てて作る |
+| `--serve`(ふだんの読み書き。SessionStart フックが起こす) | `diary_app`(行の読み書きだけ) | IAM データベース認証。`DIARY_DATABASE_URL=postgresql+psycopg://diary_app@127.0.0.1:25432/diary?sslmode=require` と `DIARY_DATABASE_IAM_AUTH=1` を渡した python が、繋ぐたびにトークンを作る。トークンは RDS の本来のエンドポイント(SSM の `/diary/db/endpoint`)に宛てて作る |
 | `-- <コマンド>`(マイグレーション・表の権限を変える SQL など、DDL が要る作業) | マスター | RDS が管理する秘密からパスワードを読み、`DIARY_DATABASE_URL`・`PG*` にして渡す。既定のポートは 25433 |
 
 - 要るもの: AWS CLI v2、ssh、AWS の権限(`ssm:GetParametersByPath`・`ssm:GetParameters`・`ec2:DescribeInstances`・`ec2:StartInstances`・`ec2:StopInstances`・

@@ -2,35 +2,33 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "db tunnel",
-      "type": "shell",
-      // 踏み台越しの転送を 127.0.0.1:25432 に張り続ける(1 時間ごとに張り直す)。止めるときはターミナルで Ctrl+C(自分で起こした踏み台も止まる)。
-      // Claude Code のセッションを開いていれば SessionStart フックが裏で起こしているので、要らない
+      "label": "mock db_reset",
+      // 開発用の db(diary_dev)を消して schema.py から作り直し、今の前後 10 年に散らした作り物の日記とコメントを入れる。
+      // 画面で試しに書いた日記・コメントも消える
       "command": ".venv/bin/python",
-      "args": ["-m", "tool.aws.rds", "--serve"],
+      "args": ["-m", "tool.dev.reset_db"],
       "options": {
         "cwd": "${workspaceFolder}",
         "env": {
           "PYTHONUTF8": "1",
-          "PYTHONPATH": "${workspaceFolder}"
+          "PYTHONPATH": "${workspaceFolder}",
+          "DIARY_DEV_DATABASE_URL": "postgresql+psycopg://diary:diary@127.0.0.1:55433/diary_dev"
         }
       },
       "windows": {
         "command": ".venv\\Scripts\\python.exe"
       },
-      "isBackground": true,
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
-        "close": true
+        "panel": "shared",
+        "close": false
       }
     },
     {
-      "label": "app",
-      "type": "shell",
-      // 日記の画面。API(uvicorn :8766)と画面(next dev :3001)を一緒に起こし、ブラウザで http://localhost:3001 を開く。
-      // 止めるときはターミナルで Ctrl+C(両方止まる)。db への転送(タスク「db tunnel」)を先に張っておく
+      "label": "mock app",
+      // 日記の画面を、開発用の db(diary_dev)に向けて起こす。API(uvicorn :8766)と画面(next dev :3001)を一緒に起こし、
+      // ブラウザで http://localhost:3001 を開く。止めるときはターミナルで Ctrl+C(両方止まる)。行は先にタスク「mock db_reset」で入れる
       "command": ".venv/bin/python",
       "args": ["-m", "gui.dev"],
       "options": {
@@ -38,8 +36,8 @@
         "env": {
           "PYTHONUTF8": "1",
           "PYTHONPATH": "${workspaceFolder}",
-          "DIARY_DATABASE_URL": "postgresql+psycopg://diary_app@127.0.0.1:25432/diary?sslmode=require",
-          "DIARY_DATABASE_IAM_AUTH": "1"
+          "DIARY_DATABASE_URL": "postgresql+psycopg://diary:diary@127.0.0.1:55433/diary_dev",
+          "DIARY_DATABASE_IAM_AUTH": "0"
         }
       },
       // npm は nvm で入れており、nvm は ~/.bashrc(対話シェルでだけ読まれる)で PATH に足されるので、対話モードで起こす
@@ -63,65 +61,9 @@
       }
     },
     {
-      "label": "mock data",
-      // 開発用の db(diary_dev)の local の行を消し、今の前後 10 年に散らした作り物の日記とコメントを入れ直す
-      "command": ".venv/bin/python",
-      "args": ["-m", "tool.dev.mock_data"],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONUTF8": "1",
-          "PYTHONPATH": "${workspaceFolder}",
-          "DIARY_DEV_DATABASE_URL": "postgresql+psycopg://diary:diary@127.0.0.1:55433/diary_dev"
-        }
-      },
-      "windows": {
-        "command": ".venv\\Scripts\\python.exe"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "close": false
-      }
-    },
-    {
-      "label": "app mock",
-      // app と同じだが、本番の RDS でなく開発用の db(diary_dev)を読み書きする。転送は要らない。行は先にタスク「mock data」で入れる
-      "command": ".venv/bin/python",
-      "args": ["-m", "gui.dev"],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONUTF8": "1",
-          "PYTHONPATH": "${workspaceFolder}",
-          "DIARY_DATABASE_URL": "postgresql+psycopg://diary:diary@127.0.0.1:55433/diary_dev",
-          "DIARY_DATABASE_IAM_AUTH": "0"
-        }
-      },
-      "linux": {
-        "options": {
-          "shell": {
-            "executable": "bash",
-            "args": ["-ic"]
-          }
-        }
-      },
-      "windows": {
-        "command": ".venv\\Scripts\\python.exe"
-      },
-      "isBackground": true,
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "close": true
-      }
-    },
-    {
-      "label": "app browser",
+      "label": "mock browser",
       "type": "shell",
-      // API・画面はすでに起きている前提で、ブラウザだけ開く(gui.dev --browser-only)
+      // 「mock app」で API・画面がすでに起きている前提で、ブラウザだけ開く(gui.dev --browser-only)
       "command": ".venv/bin/python",
       "args": ["-m", "gui.dev", "--browser-only"],
       "options": {
@@ -139,30 +81,6 @@
         "reveal": "silent",
         "panel": "shared",
         "close": true
-      }
-    },
-    {
-      "label": "test db recreate",
-      "type": "shell",
-      // テスト用の db(diary_test)を消し、schema.py から空の db を作り直す。マイグレーションを足したあとに回す
-      "command": ".venv/bin/python",
-      "args": ["-m", "tool.test.recreate_db"],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "PYTHONUTF8": "1",
-          "PYTHONPATH": "${workspaceFolder}",
-          "DIARY_DEV_DATABASE_URL": "postgresql+psycopg://diary:diary@127.0.0.1:55433/diary_dev"
-        }
-      },
-      "windows": {
-        "command": ".venv\\Scripts\\python.exe"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "close": false
       }
     },
     {

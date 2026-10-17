@@ -32,7 +32,7 @@ Next.js から db を直接開くと、その全部を TypeScript にもう一�
 
 リポジトリのルートで(環境変数は他の python と同じ。db は `DIARY_DATABASE_URL` の RDS で、踏み台越しの転送を先に張っておく。
 `.claude/docs/setup.md`)。API と画面を一緒に起こしてブラウザで開くのは `gui.dev`。
-`gui/web/node_modules` が無ければ先に `npm install` を回す。VS Code なら タスク `db tunnel` のあとに `app`(`.vscode/tasks.json`)。
+`gui/web/node_modules` が無ければ先に `npm install` を回す。VS Code のタスクは本番の db には繋がず、開発用の db だけを使う(次の「モックの日記で試す」)。
 
 ```
 .venv/bin/python -m gui.dev              # API :8766 + 画面 :3001 を起こし、http://localhost:3001 を開く。Ctrl+C で両方止める
@@ -51,10 +51,11 @@ Next.js から db を直接開くと、その全部を TypeScript にもう一�
 ### モックの日記で試す
 
 画面や API を試すだけなら、本物の日記は要らない。手元の開発用の db(`diary_dev`)に、今の前後 10 年へ散らした作り物の日記とコメントを入れ、
-そこに向けて起こす(転送は要らない)。VS Code なら タスク `mock data` のあとに `app mock`。
+そこに向けて起こす(転送は要らない)。VS Code なら タスク `mock db_reset` のあとに `mock app`(`.vscode/tasks.json`)。
 
 ```
-.venv/bin/python -m tool.dev.mock_data   # diary_dev の local の行を消し、日記 3000 件とコメントを入れ直す。--count / --years / --seed / --user
+.venv/bin/python -m tool.dev.reset_db    # diary_dev を schema.py から作り直し、日記 3000 件とコメントを入れる。--count / --years / --seed / --user
+.venv/bin/python -m tool.dev.mock_data   # 作り直さず、diary_dev の版を上げて local の行だけを入れ直す(引数は同じ)
 DIARY_DATABASE_URL=$(infra_local/postgres.sh .venv/bin/python) DIARY_DATABASE_IAM_AUTH=0 .venv/bin/python -m gui.dev
 ```
 

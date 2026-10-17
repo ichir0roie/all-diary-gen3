@@ -1,4 +1,4 @@
-"""手元の PostgreSQL(`infra_local/postgres.sh`)の db の URL。テスト(`tool.test`)とモックの db(`tool.dev`)が使う。"""
+"""手元の PostgreSQL(`infra_local/postgres.sh`)の db の URL と、作り直し・版の上げ。テスト(`tool.test`)とモックの db(`tool.dev`)が使う。"""
 import logging
 import os
 import subprocess
@@ -42,3 +42,27 @@ def pin_database_url(url: str, package: str) -> None:
                            f"{make_url(url).database} しか使わないので、こちらを先に import する")
     os.environ["DIARY_DATABASE_URL"] = url
     os.environ.pop("DIARY_DATABASE_IAM_AUTH", None)
+
+
+def recreate_local_db(url: str) -> None:
+    """手元の db `url`(`local_database_url` で作り、`pin_database_url` で固定したもの)を消し、`schema.py` から空の db を作り直す。"""
+    from sqlalchemy import text
+
+    from db.postgres import init_db
+    from db.schema import engine, make_url_engine
+
+    engine.dispose()
+    target = make_url(url)
+    admin = make_url_engine(target.set(database="postgres").render_as_string(hide_password=False))
+    with admin.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+        conn.execute(text(f'DROP DATABASE IF EXISTS "{target.database}" WITH (FORCE)'))
+    admin.dispose()
+    init_db.main(["--url", url, "--create-database"])
+
+
+def upgrade_local_db() -> None:
+    """`pin_database_url` で固定した db を、コードの版(alembic の head)まで上げる。前に作った db には、そのあと足したマイグレーションが当たっていない。"""
+    from alembic import command
+    from alembic.config import Config
+
+    command.upgrade(Config(os.path.join(ROOT, "db", "alembic", "alembic.ini")), "head")

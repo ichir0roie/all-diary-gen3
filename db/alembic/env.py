@@ -1,3 +1,4 @@
+import logging
 from logging.config import fileConfig
 
 from alembic import context
@@ -14,7 +15,9 @@ config.set_main_option("sqlalchemy.url", database_url().replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
+# 道具(init_db・tool.dev・tool.test)が同じプロセスで呼んだときは、呼んだ側のログの設定をそのまま使う。
+# alembic.ini の設定は root を WARNING にし、既にあるロガーも止めるので、呼んだ側の途中経過が消える
+if config.config_file_name is not None and not logging.getLogger().handlers:
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here

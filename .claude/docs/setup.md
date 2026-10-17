@@ -44,13 +44,13 @@ uvx --from 'uv>=0.9' uv pip install --python .venv/bin/python -r requirements.tx
 
 | 環境変数 | 中身 | 渡す所 |
 | --- | --- | --- |
-| `DIARY_DATABASE_URL` | 読み書きする db。手元は踏み台越しの RDS(`postgresql+psycopg://diary_app@127.0.0.1:25432/diary?sslmode=require`) | SessionStart フック・`.vscode`(ターミナル・タスク・デバッグ) |
+| `DIARY_DATABASE_URL` | 読み書きする db。手元は踏み台越しの RDS(`postgresql+psycopg://diary_app@127.0.0.1:25432/diary?sslmode=require`) | SessionStart フック・`.vscode`(ターミナル・デバッグ。タスクは開発用の db に向ける) |
 | `DIARY_DATABASE_IAM_AUTH` | `1` なら IAM データベース認証のトークンで繋ぐ | 同上 |
 | `DIARY_DEV_DATABASE_URL` | 開発用の空の PostgreSQL(`infra_local/postgres.sh`)。テストの db もこのサーバーに作る | `.vscode` は固定の値。Claude Code では渡さず、テスト(`tool.test`)が要ったときに用意する |
 | `PYTHONUTF8` | `1`(Windows の文字化け除け。`.claude/docs/encoding.md`) | 同上 |
 
-- 手元から RDS へは、踏み台越しの転送(`.venv/bin/python -m tool.aws.rds --serve`)を張って繋ぐ。SessionStart フックが裏で起こし、
-  VS Code ではタスク「db tunnel」で起こす。繋ぎ方の決まりは `.claude/docs/db.md`、AWS の側は `.claude/docs/aws.md`
+- 手元から RDS へは、踏み台越しの転送(`.venv/bin/python -m tool.aws.rds --serve`)を張って繋ぐ。SessionStart フックが裏で起こす
+  (VS Code のタスクには無い)。繋ぎ方の決まりは `.claude/docs/db.md`、AWS の側は `.claude/docs/aws.md`
 - 転送のポートは 25432。同じ RDS を使い回す ai-novel-core の転送(15432)と同時に張れるよう分けてある
 - `DIARY_DATABASE_URL` が無くても import はできる。繋いだ時点で止まる
 - テストは `DIARY_DATABASE_URL` を手元の PostgreSQL のテスト用の db に差し替える(`.claude/docs/testing.md`)

@@ -1,6 +1,6 @@
 #!/bin/bash
 # 開発用の PostgreSQL を用意し、空の db の SQLAlchemy の URL を標準出力に出す(.docs/postgres.md「開発用の db」)。
-# 何度走らせてもよい。サーバーが無ければ入れて起動し、db が無ければ schema.py から空の db を作る。
+# 何度走らせてもよい。サーバーが無ければ入れて起動し、db が無ければ schema.py から空の db を作り、あれば alembic で今の版に上げる。
 # クラウド(Claude Code on the web)では apt で入れた既定のクラスタ、それ以外では Docker のコンテナで動かす。
 # リポジトリのルートを cwd にし、引数に python を渡して呼ぶ。
 set -euo pipefail
@@ -54,6 +54,9 @@ if [ "$(psql_on postgres "SELECT 1 FROM pg_database WHERE datname = '$db'")" = 1
 fi
 if [ "$initialized" != t ]; then
   "$py" -m db.postgres.init_db --url "$url" --create-database >&2
+else
+  # 前に作った db は、そのあと足したマイグレーションが当たっていない(列が無いと入口が止まる)
+  DIARY_DATABASE_URL="$url" DIARY_DATABASE_IAM_AUTH=0 "$py" -m alembic -c db/alembic/alembic.ini upgrade head >&2
 fi
 
 echo "$url"

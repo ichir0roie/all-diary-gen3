@@ -23,6 +23,8 @@ RDS に作るときは、マスターで流す(`tool.aws.rds` がマスターの
 ## 開発用の db
 
 `infra_local/postgres.sh` が、開発用の PostgreSQL を用意して空の db(`diary_dev`)の URL を出す。何度走らせてもよい。
+`diary_dev` が既にあれば、`alembic upgrade head` で今の版に上げる(`tool.dev.mock_data` も行を入れる前に上げる)。
+作り直すなら `.venv/bin/python -m tool.dev.reset_db`(VS Code のタスク「mock db_reset」)。
 
 | 場所 | サーバー | URL |
 | --- | --- | --- |

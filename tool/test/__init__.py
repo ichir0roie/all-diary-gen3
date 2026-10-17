@@ -8,7 +8,7 @@ import os
 
 from sqlalchemy.engine import make_url
 
-from tool.local_db import ROOT, local_database_url, pin_database_url
+from tool.local_db import ROOT, local_database_url, pin_database_url, recreate_local_db
 
 TEST_DATABASE_NAME = "diary_test"
 TEST_DATABASE_URL = local_database_url(TEST_DATABASE_NAME)
@@ -34,7 +34,7 @@ def ensure_test_db() -> None:
     head = ScriptDirectory.from_config(Config(os.path.join(ROOT, "db", "alembic", "alembic.ini"))).get_current_head()
     if current != head:
         logger.warning(f"テスト用の db の版({current})がコードの版({head})と違う。"
-                       "`.venv/bin/python -m tool.test.recreate_db` で作り直す")
+                       "`.venv/bin/python -m tool.test.upgrade_db` で上げるか、`.venv/bin/python -m tool.test.recreate_db` で作り直す")
 
 
 def _test_db_exists() -> bool:
@@ -51,14 +51,4 @@ def _test_db_exists() -> bool:
 
 def recreate_test_db() -> None:
     """テスト用の db を消し、`schema.py` から空の db を作り直す。"""
-    from sqlalchemy import text
-
-    from db.postgres import init_db
-    from db.schema import engine, make_url_engine
-
-    engine.dispose()
-    admin = make_url_engine(make_url(TEST_DATABASE_URL).set(database="postgres").render_as_string(hide_password=False))
-    with admin.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
-        conn.execute(text(f'DROP DATABASE IF EXISTS "{TEST_DATABASE_NAME}" WITH (FORCE)'))
-    admin.dispose()
-    init_db.main(["--url", TEST_DATABASE_URL, "--create-database"])
+    recreate_local_db(TEST_DATABASE_URL)

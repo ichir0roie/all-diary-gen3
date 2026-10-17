@@ -21,6 +21,7 @@ from sqlalchemy.engine import make_url  # noqa: E402
 from data_access_logic.constants import JST  # noqa: E402
 from data_access_logic.logs import configure_logging  # noqa: E402
 from db.schema import Comment, Diary, get_env_session  # noqa: E402
+from tool.local_db import upgrade_local_db  # noqa: E402
 
 logger = logging.getLogger("tool.dev.mock_data")
 
@@ -72,6 +73,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--seed", type=int, help="乱数の種。同じ種なら同じ本文と時刻の並び(基準の今は変わる)")
     args = parser.parse_args(argv)
     configure_logging()
+    upgrade_local_db()
 
     rng = random.Random(args.seed)
     rows = mock_rows(args.user, args.count, args.years, rng)
