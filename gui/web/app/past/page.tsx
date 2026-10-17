@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import DayInput from "@/components/DayInput";
 import DiaryCard from "@/components/DiaryCard";
 import { commitDiary, listDiaries, type DiaryRecord } from "@/lib/api";
-import { addDays, nowMinute, today } from "@/lib/date";
+import { addDays, nowMinute, slashDay, today } from "@/lib/date";
 import { isSubmitKey } from "@/lib/keys";
 import { T } from "@/lib/text";
 
@@ -66,7 +67,7 @@ export default function Past() {
       <div className="toolbar">
         <label className="inline-field">
           {T.past.day}
-          <input type="date" max={today()} value={day} onChange={(e) => setDay(e.target.value)} />
+          <DayInput max={today()} value={day} onChange={setDay} />
         </label>
         <label className="inline-field">
           {T.past.time}
@@ -98,7 +99,7 @@ export default function Past() {
       {day !== "" && (
         <>
           <h2>
-            {T.past.onDay(day)}
+            {T.past.onDay(slashDay(day))}
             <Link className="open-week" href={`/?${new URLSearchParams({ day })}`}>{T.diary.openWeek}</Link>
           </h2>
           {listError && <div className="status error">{T.cannotReachApi(listError)}</div>}

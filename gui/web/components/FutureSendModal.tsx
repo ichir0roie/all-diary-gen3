@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DayInput from "@/components/DayInput";
 import Modal from "@/components/Modal";
 import { listFutureDiaries, sendFutureDiary, type FutureDiaryRecord } from "@/lib/api";
 import { addDays, addYears, dateOnly, today } from "@/lib/date";
@@ -73,14 +74,7 @@ export default function FutureSendModal({ initialText, onSent, onClose }: Props)
       />
       <div className="field">
         <label htmlFor="deliver-on">{T.future.deliverOn}</label>
-        <input
-          id="deliver-on"
-          type="date"
-          min={tomorrow}
-          value={deliverOn}
-          disabled={sentOn !== null}
-          onChange={(e) => setDeliverOn(e.target.value)}
-        />
+        <DayInput id="deliver-on" min={tomorrow} value={deliverOn} disabled={sentOn !== null} onChange={setDeliverOn} />
       </div>
       {sentOn && <div className="status ok">{T.future.sent(sentOn)}</div>}
       {error && <div className="status error">{error}</div>}

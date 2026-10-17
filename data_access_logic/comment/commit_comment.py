@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from data_access_logic.comment.form import CommentCreateForm
 from data_access_logic.comment.record import CommentRecord
 from data_access_logic.constants import JST
-from data_access_logic.entrypoint import CommitEntrypoint
+from data_access_logic.entrypoint import CommitEntrypoint, record_of
 from data_access_logic.query.common_query import own_diary
 from db.schema import Comment
 
@@ -27,4 +27,4 @@ class CommitComment(CommitEntrypoint):
         record.time = self.comment.time or datetime.now(JST)
         s.add(record)
         self.finalize(s, record)
-        return CommentRecord.model_validate(record)
+        return record_of(s, CommentRecord, record)

@@ -13,7 +13,7 @@ from collections.abc import Iterator
 from datetime import date
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.exc import OperationalError
@@ -25,6 +25,7 @@ from data_access_logic.comment.form import CommentCreateForm, CommentUpdateForm
 from data_access_logic.comment.list_comments import ListComments
 from data_access_logic.comment.read_comment import ReadComment
 from data_access_logic.comment.record import CommentRecord, DeletedComment
+from data_access_logic.comment.set_comment_tag import SetCommentTag
 from data_access_logic.comment.update_comment import UpdateComment
 from data_access_logic.csv_file.export_comment_csv import ExportCommentCsv
 from data_access_logic.csv_file.export_diary_csv import ExportDiaryCsv
@@ -36,22 +37,31 @@ from data_access_logic.diary.count_diaries_by_day import CountDiariesByDay
 from data_access_logic.diary.delete_diary import DeleteDiary
 from data_access_logic.diary.form import DiaryCreateForm, DiaryUpdateForm, FutureDiaryCreateForm
 from data_access_logic.diary.list_diaries import ListDiaries
+from data_access_logic.diary.list_diaries_in_spans import ListDiariesInSpans
 from data_access_logic.diary.list_future_diaries import ListFutureDiaries
 from data_access_logic.diary.list_on_this_day import ListOnThisDay
 from data_access_logic.diary.list_similar_diaries import ListSimilarDiaries
+from data_access_logic.diary.list_tagged_diaries import ListTaggedDiaries
 from data_access_logic.diary.read_diary import ReadDiary
-from data_access_logic.diary.record import (DayCount, DeletedDiary, DiaryRecord, FutureDiaryRecord, OnThisDayYear,
-                                            SimilarDiaries)
+from data_access_logic.diary.record import (DayCount, DeletedDiary, DiaryRecord, DiarySpan, FutureDiaryRecord,
+                                            OnThisDayYear, SimilarDiaries)
 from data_access_logic.diary.search_similar_diaries import SearchSimilarDiaries
 from data_access_logic.diary.send_future_diary import SendFutureDiary
+from data_access_logic.diary.set_diary_tag import SetDiaryTag
 from data_access_logic.diary.update_diary import UpdateDiary
 from data_access_logic.entrypoint import UnknownRecordError
 from data_access_logic.legacy_db.import_legacy_db import ImportLegacyDb
 from data_access_logic.legacy_db.record import LegacyDbSummary, LegacyImported
 from data_access_logic.legacy_db.summarize_legacy_db import SummarizeLegacyDb
 from data_access_logic.logs import configure_logging
+from data_access_logic.tag.commit_tag import CommitTag
+from data_access_logic.tag.delete_tag import DeleteTag
+from data_access_logic.tag.form import TagChoiceForm, TagCreateForm, TagUpdateForm
+from data_access_logic.tag.list_tags import ListTags
+from data_access_logic.tag.record import DeletedTag, TagRecord, TagUsage
+from data_access_logic.tag.update_tag import UpdateTag
 from db.schema import engine, get_env_session
-from gui.api.models import FILE_BODY, CsvImportRequest, CsvKind, Health, SimilarSearchRequest
+from gui.api.models import FILE_BODY, CsvImportRequest, CsvKind, DiarySpansRequest, Health, SimilarSearchRequest
 from gui.api.user import user_id_dep
 
 logger = logging.getLogger(__name__)
@@ -151,6 +161,18 @@ def list_diaries(user_id: UserId, s: Db, start_date: date | None = None, end_dat
     return ListDiaries(user_id, start_date=start_date, end_date=end_date).execute(s)
 
 
+@app.post("/api/diaries/spans", response_model=list[DiarySpan])
+def list_diaries_in_spans(request: DiarySpansRequest, user_id: UserId, s: Db) -> list[DiarySpan]:
+    """`spans` の日付の範囲ごとの日記を、頼んだ順に。日記の画面が、見えている年の列の分を一度に読む。"""
+    return ListDiariesInSpans(user_id, request.spans).execute(s)
+
+
+@app.get("/api/diaries/tagged", response_model=list[DiaryRecord])
+def list_tagged_diaries(user_id: UserId, s: Db, tag_id: Annotated[list[int], Query(min_length=1)]) -> list[DiaryRecord]:
+    """`tag_id`(いくつでも)のどれかが、日記か、そのコメントに付いた日記を、コメント付きで新しい順に。"""
+    return ListTaggedDiaries(user_id, tag_id).execute(s)
+
+
 @app.post("/api/diaries/similar", response_model=SimilarDiaries)
 def search_similar_diaries(request: SimilarSearchRequest, user_id: UserId, s: Db) -> SimilarDiaries:
     """`text` に似た日記の数と、似ている順の頭の何件か。"""
@@ -206,6 +228,13 @@ def delete_diary(diary_id: int, user_id: UserId, s: Db) -> DeletedDiary:
         return DeleteDiary(user_id, diary_id).execute(s)
 
 
+@app.put("/api/diaries/{diary_id}/tag", response_model=DiaryRecord)
+def set_diary_tag(diary_id: int, tag: TagChoiceForm, user_id: UserId, s: Db) -> DiaryRecord:
+    """日記にタグを付ける。`tag_id` が null なら外す。"""
+    with s.begin():
+        return SetDiaryTag(user_id, diary_id, tag).execute(s)
+
+
 @app.get("/api/diaries/{diary_id}/similar", response_model=SimilarDiaries)
 def list_similar_diaries(diary_id: int, user_id: UserId, s: Db) -> SimilarDiaries:
     """日記一件に似た日記の数と、似ている順の頭の何件か(元の日記は除く)。"""
@@ -238,6 +267,40 @@ def update_comment(comment_id: int, comment: CommentUpdateForm, user_id: UserId,
 def delete_comment(comment_id: int, user_id: UserId, s: Db) -> DeletedComment:
     with s.begin():
         return DeleteComment(user_id, comment_id).execute(s)
+
+
+@app.put("/api/comments/{comment_id}/tag", response_model=CommentRecord)
+def set_comment_tag(comment_id: int, tag: TagChoiceForm, user_id: UserId, s: Db) -> CommentRecord:
+    """コメントにタグを付ける。`tag_id` が null なら外す。"""
+    with s.begin():
+        return SetCommentTag(user_id, comment_id, tag).execute(s)
+
+
+@app.get("/api/tags", response_model=list[TagUsage])
+def list_tags(user_id: UserId, s: Db) -> list[TagUsage]:
+    """タグを名前の順に、付けた日記・コメントの数と。"""
+    return ListTags(user_id).execute(s)
+
+
+
+
+@app.post("/api/tags", response_model=TagRecord, status_code=201)
+def commit_tag(tag: TagCreateForm, user_id: UserId, s: Db) -> TagRecord:
+    with s.begin():
+        return CommitTag(user_id, tag).execute(s)
+
+
+@app.patch("/api/tags/{tag_id}", response_model=TagRecord)
+def update_tag(tag_id: int, tag: TagUpdateForm, user_id: UserId, s: Db) -> TagRecord:
+    with s.begin():
+        return UpdateTag(user_id, tag_id, tag).execute(s)
+
+
+@app.delete("/api/tags/{tag_id}", response_model=DeletedTag)
+def delete_tag(tag_id: int, user_id: UserId, s: Db) -> DeletedTag:
+    """タグを消す。付いていた日記・コメントはタグ無しに戻す。"""
+    with s.begin():
+        return DeleteTag(user_id, tag_id).execute(s)
 
 
 @app.post("/api/csv/{kind}", response_model=Imported)

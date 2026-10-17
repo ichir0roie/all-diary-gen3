@@ -4,7 +4,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from data_access_logic.comment.record import CommentRecord
-from data_access_logic.entrypoint import SessionEntrypoint
+from data_access_logic.entrypoint import SessionEntrypoint, record_of
 from data_access_logic.query.common_query import own_row
 from db.schema import Comment
 
@@ -15,4 +15,4 @@ class ReadComment(SessionEntrypoint):
         self.comment_id = comment_id
 
     def execute(self, s: Session) -> CommentRecord:
-        return CommentRecord.model_validate(own_row(s, Comment, self.comment_id, self.user_id))
+        return record_of(s, CommentRecord, own_row(s, Comment, self.comment_id, self.user_id))

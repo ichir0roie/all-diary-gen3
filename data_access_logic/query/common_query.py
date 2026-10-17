@@ -3,15 +3,15 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
 
-from sqlalchemy import ColumnElement, or_
+from sqlalchemy import ColumnElement, or_, select
 from sqlalchemy.orm import Session
 
 from data_access_logic.constants import JST
 from data_access_logic.entrypoint import UnknownRecordError
-from db.schema import Comment, Diary
+from db.schema import Comment, Diary, Tag
 
 
-def own_row[M: Diary | Comment](s: Session, model: type[M], id_: int, user_id: str) -> M:
+def own_row[M: Diary | Comment | Tag](s: Session, model: type[M], id_: int, user_id: str) -> M:
     """`user_id` の人が書いた行だけを返す。他の人の行も、無い行と同じに扱う(在ることを漏らさない)。"""
     row = s.get(model, id_)
     if row is None or row.user_id != user_id:
@@ -40,3 +40,12 @@ def own_diary(s: Session, diary_id: int, user_id: str) -> Diary:
     if diary.written_at is not None and diary.time > datetime.now(JST):
         raise UnknownRecordError(f"id={diary_id} の diary が見つからない")
     return diary
+
+
+def refuse_taken_tag_name(s: Session, user_id: str, name: str, exclude_tag_id: int | None = None) -> None:
+    """同じ人が同じ名前のタグを既に持っていれば止める(名前を変えるときは、変える当のタグを除いて比べる)。"""
+    query = select(Tag.id).where(Tag.user_id == user_id, Tag.name == name)
+    if exclude_tag_id is not None:
+        query = query.where(Tag.id != exclude_tag_id)
+    if s.scalar(query) is not None:
+        raise ValueError(f"タグ「{name}」は既にある")

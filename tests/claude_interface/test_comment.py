@@ -20,7 +20,7 @@ def test_read_comment(shown, book):
     result = shown(ReadComment(book.user_id, book.comment_id))
 
     assert result == {"id": book.comment_id, "diary_id": book.diary_ids[1], "time": "2024-07-02T22:00:00+09:00",
-                      "text": "7 月 2 日へのコメント"}
+                      "tag": None, "text": "7 月 2 日へのコメント"}
 
 
 def test_commit_comment(shown, book):

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from data_access_logic.comment.form import CommentUpdateForm
 from data_access_logic.comment.record import CommentRecord
-from data_access_logic.entrypoint import CommitEntrypoint
+from data_access_logic.entrypoint import CommitEntrypoint, record_of
 from data_access_logic.query.common_query import own_row
 from db.schema import Comment
 
@@ -22,4 +22,4 @@ class UpdateComment(CommitEntrypoint):
         record = own_row(s, Comment, self.comment_id, self.user_id)
         self.comment.write_to(record)
         self.finalize(s, record)
-        return CommentRecord.model_validate(record)
+        return record_of(s, CommentRecord, record)

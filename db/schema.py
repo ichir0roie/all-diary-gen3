@@ -4,9 +4,9 @@ from __future__ import annotations
 import os
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, String, create_engine
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, create_engine
 from sqlalchemy.engine import make_url
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, declared_attr, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -29,7 +29,25 @@ class Post(Base):
     time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="書いた時刻", sort_order=20)
     migration_id: Mapped[int | None] = mapped_column(
         BigInteger, comment="CSV から取り込んだ行の、取り込む前の id。コメントの CSV の diary_id はこれで日記を引く", sort_order=900)
+    # タグを消したら、付いていた日記・コメントはタグ無しに戻す
+    tag_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("tag.id", ondelete="SET NULL"), comment="付けたタグ。無ければ NULL", sort_order=50)
     text: Mapped[str] = mapped_column(String, nullable=False, sort_order=1000)
+
+    @declared_attr
+    def tag(cls) -> Mapped[Tag | None]:
+        return relationship(lazy="raise")
+
+
+class Tag(Base):
+    """日記・コメントに一つずつ付けられる札。人ごとに持ち、同じ人の中で名前は重ねない。"""
+
+    __tablename__ = "tag"
+
+    user_id: Mapped[str] = mapped_column(String, nullable=False, comment="作った人。Cognito のユーザーの sub", sort_order=10)
+    name: Mapped[str] = mapped_column(String, nullable=False, sort_order=20)
+
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_tag_user_id_name"),)
 
 
 class Diary(Post):
@@ -45,7 +63,7 @@ class Diary(Post):
     comments: Mapped[list[Comment]] = relationship(
         back_populates="diary", lazy="raise", viewonly=True, order_by="(Comment.time, Comment.id)")
 
-    __table_args__ = (Index("ix_diary_user_id_time", "user_id", "time"),)
+    __table_args__ = (Index("ix_diary_user_id_time", "user_id", "time"), Index("ix_diary_tag_id", "tag_id"))
 
 
 class Comment(Post):
@@ -56,7 +74,7 @@ class Comment(Post):
 
     diary: Mapped[Diary] = relationship(back_populates="comments", lazy="raise")
 
-    __table_args__ = (Index("ix_comment_diary_id", "diary_id"),)
+    __table_args__ = (Index("ix_comment_diary_id", "diary_id"), Index("ix_comment_tag_id", "tag_id"))
 
 
 # 読み書きする db の SQLAlchemy の URL。手元は踏み台越しの RDS(`tool.aws.rds --serve`)、Lambda は VPC の中の RDS、

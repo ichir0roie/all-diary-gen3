@@ -42,6 +42,23 @@ def test_list_diaries(client, book):
     assert [diary["id"] for diary in response.json()] == book.diary_ids[:2]
 
 
+def test_list_diaries_in_spans(client, book):
+    response = client.post("/api/diaries/spans", json={"spans": [{"start_date": "2024-07-03", "end_date": "2024-07-03"},
+                                                                 {"start_date": "2024-07-01", "end_date": "2024-07-02"}]},
+                           headers=as_user(book.user_id))
+
+    assert response.status_code == 200
+    assert [[diary["id"] for diary in span["diaries"]] for span in response.json()] == [
+        book.diary_ids[2:], book.diary_ids[:2]]
+
+
+def test_list_diaries_in_too_many_spans(client, book):
+    response = client.post("/api/diaries/spans", json={"spans": [{"start_date": "2024-07-01", "end_date": "2024-07-01"}] * 101},
+                           headers=as_user(book.user_id))
+
+    assert response.status_code == 400
+
+
 def test_read_diary(client, book):
     response = client.get(f"/api/diaries/{book.diary_ids[1]}", headers=as_user(book.user_id))
 
@@ -203,3 +220,47 @@ def test_legacy_db_not_sqlite(client, book):
                            headers={**as_user(book.user_id), "content-type": "application/octet-stream"})
 
     assert response.status_code == 400
+
+
+def test_tags(client, book):
+    created = client.post("/api/tags", json={"name": "旅行"}, headers=as_user(book.user_id))
+    tag = created.json()
+    tagged_diary = client.put(f"/api/diaries/{book.diary_ids[1]}/tag", json={"tag_id": tag["id"]},
+                              headers=as_user(book.user_id))
+    tagged_comment = client.put(f"/api/comments/{book.comment_id}/tag", json={"tag_id": tag["id"]},
+                                headers=as_user(book.user_id))
+    renamed = client.patch(f"/api/tags/{tag['id']}", json={"name": "旅"}, headers=as_user(book.user_id))
+    listed = client.get("/api/tags", headers=as_user(book.user_id))
+    tagged_diaries = client.get("/api/diaries/tagged", params={"tag_id": [tag["id"]]}, headers=as_user(book.user_id))
+
+    assert created.status_code == 201
+    assert (tagged_diary.status_code, tagged_diary.json()["tag"]) == (200, tag)
+    assert (tagged_comment.status_code, tagged_comment.json()["tag"]) == (200, tag)
+    assert renamed.json() == {"id": tag["id"], "name": "旅"}
+    assert listed.json() == [{"tag": {"id": tag["id"], "name": "旅"}, "diaries": 1, "comments": 1}]
+    assert [diary["id"] for diary in tagged_diaries.json()] == [book.diary_ids[1]]
+
+    deleted = client.delete(f"/api/tags/{tag['id']}", headers=as_user(book.user_id))
+    diary = client.get(f"/api/diaries/{book.diary_ids[1]}", headers=as_user(book.user_id)).json()
+
+    assert deleted.json() == {"id": tag["id"], "diaries": 1, "comments": 1}
+    assert (diary["tag"], diary["comments"][0]["tag"]) == (None, None)
+
+
+def test_taken_tag_name(client, book):
+    client.post("/api/tags", json={"name": "旅行"}, headers=as_user(book.user_id))
+    response = client.post("/api/tags", json={"name": "旅行"}, headers=as_user(book.user_id))
+
+    assert response.status_code == 400
+
+
+def test_other_users_tag(client, book):
+    tag = client.post("/api/tags", json={"name": "旅行"}, headers=as_user(book.other_user_id)).json()
+
+    tagged = client.put(f"/api/diaries/{book.diary_ids[0]}/tag", json={"tag_id": tag["id"]}, headers=as_user(book.user_id))
+    deleted = client.delete(f"/api/tags/{tag['id']}", headers=as_user(book.user_id))
+    diaries = client.get("/api/diaries/tagged", params={"tag_id": [tag["id"]]}, headers=as_user(book.user_id))
+    no_tag = client.get("/api/diaries/tagged", headers=as_user(book.user_id))
+
+    assert (tagged.status_code, deleted.status_code, diaries.status_code) == (404, 404, 404)
+    assert no_tag.status_code == 422

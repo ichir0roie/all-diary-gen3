@@ -184,6 +184,131 @@
         }
       }
     },
+    "/api/diaries/spans": {
+      "post": {
+        "summary": "List Diaries In Spans",
+        "description": "`spans` の日付の範囲ごとの日記を、頼んだ順に。日記の画面が、見えている年の列の分を一度に読む。",
+        "operationId": "list_diaries_in_spans_api_diaries_spans_post",
+        "parameters": [
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiarySpansRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DiarySpan"
+                  },
+                  "title": "Response List Diaries In Spans Api Diaries Spans Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diaries/tagged": {
+      "get": {
+        "summary": "List Tagged Diaries",
+        "description": "`tag_id`(いくつでも)のどれかが、日記か、そのコメントに付いた日記を、コメント付きで新しい順に。",
+        "operationId": "list_tagged_diaries_api_diaries_tagged_get",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "minItems": 1,
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DiaryRecord"
+                  },
+                  "title": "Response List Tagged Diaries Api Diaries Tagged Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/diaries/similar": {
       "post": {
         "summary": "Search Similar Diaries",
@@ -674,6 +799,72 @@
         }
       }
     },
+    "/api/diaries/{diary_id}/tag": {
+      "put": {
+        "summary": "Set Diary Tag",
+        "description": "日記にタグを付ける。`tag_id` が null なら外す。",
+        "operationId": "set_diary_tag_api_diaries__diary_id__tag_put",
+        "parameters": [
+          {
+            "name": "diary_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Diary Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagChoiceForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiaryRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/diaries/{diary_id}/similar": {
       "get": {
         "summary": "List Similar Diaries",
@@ -1016,6 +1207,296 @@
         }
       }
     },
+    "/api/comments/{comment_id}/tag": {
+      "put": {
+        "summary": "Set Comment Tag",
+        "description": "コメントにタグを付ける。`tag_id` が null なら外す。",
+        "operationId": "set_comment_tag_api_comments__comment_id__tag_put",
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Comment Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagChoiceForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "summary": "List Tags",
+        "description": "タグを名前の順に、付けた日記・コメントの数と。",
+        "operationId": "list_tags_api_tags_get",
+        "parameters": [
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagUsage"
+                  },
+                  "title": "Response List Tags Api Tags Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Commit Tag",
+        "operationId": "commit_tag_api_tags_post",
+        "parameters": [
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagCreateForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tags/{tag_id}": {
+      "patch": {
+        "summary": "Update Tag",
+        "operationId": "update_tag_api_tags__tag_id__patch",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagUpdateForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Tag",
+        "description": "タグを消す。付いていた日記・コメントはタグ無しに戻す。",
+        "operationId": "delete_tag_api_tags__tag_id__delete",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "x-diary-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Diary-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedTag"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/csv/{kind}": {
       "post": {
         "summary": "Import Csv",
@@ -1318,6 +1799,16 @@
             "type": "string",
             "title": "Time"
           },
+          "tag": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TagRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "text": {
             "type": "string",
             "title": "Text"
@@ -1328,6 +1819,7 @@
           "id",
           "diary_id",
           "time",
+          "tag",
           "text"
         ],
         "title": "CommentRecord"
@@ -1385,6 +1877,28 @@
         "title": "DayCount",
         "description": "日本時間の暦の日ごとの、日記の件数と文字数。"
       },
+      "DaySpanForm": {
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start_date",
+          "end_date"
+        ],
+        "title": "DaySpanForm",
+        "description": "日本時間の日付の範囲。両端を含む。"
+      },
       "DeletedComment": {
         "properties": {
           "id": {
@@ -1420,6 +1934,29 @@
           "comments"
         ],
         "title": "DeletedDiary"
+      },
+      "DeletedTag": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "diaries": {
+            "type": "integer",
+            "title": "Diaries"
+          },
+          "comments": {
+            "type": "integer",
+            "title": "Comments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "diaries",
+          "comments"
+        ],
+        "title": "DeletedTag"
       },
       "DiaryCreateForm": {
         "properties": {
@@ -1469,6 +2006,16 @@
             ],
             "title": "Written At"
           },
+          "tag": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TagRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "text": {
             "type": "string",
             "title": "Text"
@@ -1486,10 +2033,56 @@
           "id",
           "time",
           "written_at",
+          "tag",
           "text",
           "comments"
         ],
         "title": "DiaryRecord"
+      },
+      "DiarySpan": {
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "diaries": {
+            "items": {
+              "$ref": "#/components/schemas/DiaryRecord"
+            },
+            "type": "array",
+            "title": "Diaries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start_date",
+          "end_date",
+          "diaries"
+        ],
+        "title": "DiarySpan",
+        "description": "頼まれた日付の範囲(両端を含む)と、その間の日記。"
+      },
+      "DiarySpansRequest": {
+        "properties": {
+          "spans": {
+            "items": {
+              "$ref": "#/components/schemas/DaySpanForm"
+            },
+            "type": "array",
+            "title": "Spans"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spans"
+        ],
+        "title": "DiarySpansRequest"
       },
       "DiaryUpdateForm": {
         "properties": {
@@ -1750,6 +2343,99 @@
           "text"
         ],
         "title": "SimilarSearchRequest"
+      },
+      "TagChoiceForm": {
+        "properties": {
+          "tag_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tag_id"
+        ],
+        "title": "TagChoiceForm",
+        "description": "日記・コメントに付けるタグ。"
+      },
+      "TagCreateForm": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "TagCreateForm"
+      },
+      "TagRecord": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TagRecord"
+      },
+      "TagUpdateForm": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "TagUpdateForm"
+      },
+      "TagUsage": {
+        "properties": {
+          "tag": {
+            "$ref": "#/components/schemas/TagRecord"
+          },
+          "diaries": {
+            "type": "integer",
+            "title": "Diaries"
+          },
+          "comments": {
+            "type": "integer",
+            "title": "Comments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tag",
+          "diaries",
+          "comments"
+        ],
+        "title": "TagUsage",
+        "description": "タグと、それを付けた日記・コメントの数。"
       },
       "ValidationError": {
         "properties": {

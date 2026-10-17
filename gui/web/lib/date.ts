@@ -46,3 +46,16 @@ export const dayOf = (iso: string) => new Intl.DateTimeFormat("sv-SE", { timeZon
 export const weekday = (day: string) => fromDay(day).getUTCDay();
 
 export const isDay = (value: string | null): value is string => value !== null && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+/** "YYYY-MM-DD" を、画面で打つ形の "YYYY/MM/DD" にする */
+export const slashDay = (day: string) => day.replaceAll("-", "/");
+
+/** 打った日付("YYYY/MM/DD"。"-" 区切り・1 桁の月日・区切り無しの 8 桁も読む)を "YYYY-MM-DD" にする。暦に無い日や読めない形は "" */
+export function parseDayText(text: string): string {
+  const match = text.trim().match(/^(\d{4})[/-]?(\d{1,2})[/-]?(\d{1,2})$/);
+  if (!match) return "";
+  const day = `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+  // 13 月は Date が読めず、2 月 30 日は翌月へ繰り越すことがあるので、往復して同じ日に戻るものだけを認める
+  const date = fromDay(day);
+  return !Number.isNaN(date.getTime()) && toDay(date) === day ? day : "";
+}

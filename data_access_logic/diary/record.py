@@ -5,16 +5,18 @@ from sqlalchemy.orm import selectinload
 
 from data_access_logic.comment.record import CommentRecord
 from data_access_logic.material import JstTime, Material
-from db.schema import Diary
+from data_access_logic.tag.record import TagRecord
+from db.schema import Comment, Diary
 
 
 class DiaryRecord(Material):
-    LOAD_OPTIONS: ClassVar[tuple] = (selectinload(Diary.comments),)
+    LOAD_OPTIONS: ClassVar[tuple] = (selectinload(Diary.tag), selectinload(Diary.comments).selectinload(Comment.tag))
 
     id: int
     time: JstTime
     # 未来へ送った日記の、書いた時刻(`time` は届いた時刻)。ふだんの日記は None
     written_at: JstTime | None
+    tag: TagRecord | None
     text: str
     comments: list[CommentRecord]
 
@@ -38,6 +40,14 @@ class OnThisDayYear(Material):
     """ある年の、同じ月日の前後の日記。"""
 
     year: int
+    start_date: date
+    end_date: date
+    diaries: list[DiaryRecord]
+
+
+class DiarySpan(Material):
+    """頼まれた日付の範囲(両端を含む)と、その間の日記。"""
+
     start_date: date
     end_date: date
     diaries: list[DiaryRecord]

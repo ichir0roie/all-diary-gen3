@@ -15,6 +15,13 @@ class DiaryUpdateForm(Form):
     text: str = Field(min_length=1)
 
 
+class DaySpanForm(Form):
+    """日本時間の日付の範囲。両端を含む。"""
+
+    start_date: date
+    end_date: date
+
+
 class FutureDiaryCreateForm(Form):
     text: str = Field(min_length=1)
     # 届ける日(日本時間)。その日の 0 時に届く。明日より前は選べない

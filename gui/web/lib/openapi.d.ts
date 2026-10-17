@@ -59,6 +59,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diaries/spans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * List Diaries In Spans
+         * @description `spans` の日付の範囲ごとの日記を、頼んだ順に。日記の画面が、見えている年の列の分を一度に読む。
+         */
+        post: operations["list_diaries_in_spans_api_diaries_spans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diaries/tagged": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tagged Diaries
+         * @description `tag_id`(いくつでも)のどれかが、日記か、そのコメントに付いた日記を、コメント付きで新しい順に。
+         */
+        get: operations["list_tagged_diaries_api_diaries_tagged_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diaries/similar": {
         parameters: {
             query?: never;
@@ -162,6 +202,26 @@ export interface paths {
         patch: operations["update_diary_api_diaries__diary_id__patch"];
         trace?: never;
     };
+    "/api/diaries/{diary_id}/tag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Diary Tag
+         * @description 日記にタグを付ける。`tag_id` が null なら外す。
+         */
+        put: operations["set_diary_tag_api_diaries__diary_id__tag_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diaries/{diary_id}/similar": {
         parameters: {
             query?: never;
@@ -233,6 +293,68 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/comments/{comment_id}/tag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Comment Tag
+         * @description コメントにタグを付ける。`tag_id` が null なら外す。
+         */
+        put: operations["set_comment_tag_api_comments__comment_id__tag_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tags
+         * @description タグを名前の順に、付けた日記・コメントの数と。
+         */
+        get: operations["list_tags_api_tags_get"];
+        put?: never;
+        /** Commit Tag */
+        post: operations["commit_tag_api_tags_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Tag
+         * @description タグを消す。付いていた日記・コメントはタグ無しに戻す。
+         */
+        delete: operations["delete_tag_api_tags__tag_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Tag */
+        patch: operations["update_tag_api_tags__tag_id__patch"];
         trace?: never;
     };
     "/api/csv/{kind}": {
@@ -320,6 +442,7 @@ export interface components {
             diary_id: number;
             /** Time */
             time: string;
+            tag: components["schemas"]["TagRecord"] | null;
             /** Text */
             text: string;
         };
@@ -348,6 +471,22 @@ export interface components {
             /** Chars */
             chars: number;
         };
+        /**
+         * DaySpanForm
+         * @description 日本時間の日付の範囲。両端を含む。
+         */
+        DaySpanForm: {
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+        };
         /** DeletedComment */
         DeletedComment: {
             /** Id */
@@ -359,6 +498,15 @@ export interface components {
         DeletedDiary: {
             /** Id */
             id: number;
+            /** Comments */
+            comments: number;
+        };
+        /** DeletedTag */
+        DeletedTag: {
+            /** Id */
+            id: number;
+            /** Diaries */
+            diaries: number;
             /** Comments */
             comments: number;
         };
@@ -377,10 +525,34 @@ export interface components {
             time: string;
             /** Written At */
             written_at: string | null;
+            tag: components["schemas"]["TagRecord"] | null;
             /** Text */
             text: string;
             /** Comments */
             comments: components["schemas"]["CommentRecord"][];
+        };
+        /**
+         * DiarySpan
+         * @description 頼まれた日付の範囲(両端を含む)と、その間の日記。
+         */
+        DiarySpan: {
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Diaries */
+            diaries: components["schemas"]["DiaryRecord"][];
+        };
+        /** DiarySpansRequest */
+        DiarySpansRequest: {
+            /** Spans */
+            spans: components["schemas"]["DaySpanForm"][];
         };
         /** DiaryUpdateForm */
         DiaryUpdateForm: {
@@ -491,6 +663,42 @@ export interface components {
         SimilarSearchRequest: {
             /** Text */
             text: string;
+        };
+        /**
+         * TagChoiceForm
+         * @description 日記・コメントに付けるタグ。
+         */
+        TagChoiceForm: {
+            /** Tag Id */
+            tag_id: number | null;
+        };
+        /** TagCreateForm */
+        TagCreateForm: {
+            /** Name */
+            name: string;
+        };
+        /** TagRecord */
+        TagRecord: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /** TagUpdateForm */
+        TagUpdateForm: {
+            /** Name */
+            name: string;
+        };
+        /**
+         * TagUsage
+         * @description タグと、それを付けた日記・コメントの数。
+         */
+        TagUsage: {
+            tag: components["schemas"]["TagRecord"];
+            /** Diaries */
+            diaries: number;
+            /** Comments */
+            comments: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -612,6 +820,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiaryRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_diaries_in_spans_api_diaries_spans_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiarySpansRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarySpan"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tagged_diaries_api_diaries_tagged_get: {
+        parameters: {
+            query: {
+                tag_id: number[];
+            };
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiaryRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -897,6 +1173,43 @@ export interface operations {
             };
         };
     };
+    set_diary_tag_api_diaries__diary_id__tag_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                diary_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagChoiceForm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiaryRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_similar_diaries_api_diaries__diary_id__similar_get: {
         parameters: {
             query?: never;
@@ -1088,6 +1401,179 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommentRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_comment_tag_api_comments__comment_id__tag_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                comment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagChoiceForm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tags_api_tags_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagUsage"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    commit_tag_api_tags_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagCreateForm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_tag_api_tags__tag_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedTag"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_tag_api_tags__tag_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-diary-user"?: string | null;
+            };
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagUpdateForm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagRecord"];
                 };
             };
             /** @description Validation Error */

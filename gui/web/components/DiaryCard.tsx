@@ -4,15 +4,19 @@ import { useRouter } from "next/navigation";
 import { useState, type MouseEvent } from "react";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import PopupMenu, { type MenuItem } from "@/components/PopupMenu";
+import TagDialog from "@/components/TagDialog";
 import TextDialog from "@/components/TextDialog";
 import {
   commitComment,
   deleteComment,
   deleteDiary,
+  setCommentTag,
+  setDiaryTag,
   updateComment,
   updateDiary,
   type CommentRecord,
   type DiaryRecord,
+  type TagRecord,
 } from "@/lib/api";
 import { dateOnly, dateTime } from "@/lib/date";
 import { T } from "@/lib/text";
@@ -20,8 +24,10 @@ import { T } from "@/lib/text";
 type Dialog =
   | { kind: "comment" }
   | { kind: "editDiary" }
+  | { kind: "tagDiary" }
   | { kind: "deleteDiary" }
   | { kind: "editComment"; comment: CommentRecord }
+  | { kind: "tagComment"; comment: CommentRecord }
   | { kind: "deleteComment"; comment: CommentRecord };
 
 type Props = {
@@ -30,7 +36,7 @@ type Props = {
   onDeleted: (diaryId: number) => void;
 };
 
-/** 日記一件とコメント。日記を押すと「コメント・似た日記・書き直す・消す」、コメントを押すと「書き直す・消す」のメニューを開く。
+/** 日記一件とコメント。日記を押すと「コメント・似た日記・タグ・書き直す・消す」、コメントを押すと「タグ・書き直す・消す」のメニューを開く。
  * 書き足し・書き直しはこのカードの中だけで反映する(週を読み直さない) */
 export default function DiaryCard({ diary: initial, onDeleted }: Props) {
   const router = useRouter();
@@ -50,10 +56,12 @@ export default function DiaryCard({ diary: initial, onDeleted }: Props) {
   const diaryItems: MenuItem[] = [
     { label: T.diary.comment, onSelect: () => setDialog({ kind: "comment" }) },
     { label: T.diary.similar, onSelect: () => router.push(`/similar?${new URLSearchParams({ diary: String(diary.id) })}`) },
+    { label: T.tag.menu, onSelect: () => setDialog({ kind: "tagDiary" }) },
     { label: T.diary.edit, onSelect: () => setDialog({ kind: "editDiary" }) },
     { label: T.diary.delete, onSelect: () => setDialog({ kind: "deleteDiary" }), danger: true },
   ];
   const commentItems = (comment: CommentRecord): MenuItem[] => [
+    { label: T.tag.menu, onSelect: () => setDialog({ kind: "tagComment", comment }) },
     { label: T.diary.edit, onSelect: () => setDialog({ kind: "editComment", comment }) },
     { label: T.diary.delete, onSelect: () => setDialog({ kind: "deleteComment", comment }), danger: true },
   ];
@@ -64,13 +72,17 @@ export default function DiaryCard({ diary: initial, onDeleted }: Props) {
         <div className="time">
           {dateTime(diary.time)}
           {diary.written_at && <span className="badge">{T.diary.fromPast(dateOnly(diary.written_at))}</span>}
+          {diary.tag && <TagChip tag={diary.tag} />}
         </div>
         <div className="text">{diary.text}</div>
         {comments.length > 0 && (
           <ul className="comments">
             {comments.map((comment) => (
               <li key={comment.id} onClick={(e) => openMenu(e, commentItems(comment))}>
-                <div className="time">{dateTime(comment.time)}</div>
+                <div className="time">
+                  {dateTime(comment.time)}
+                  {comment.tag && <TagChip tag={comment.tag} />}
+                </div>
                 <div className="text">{comment.text}</div>
               </li>
             ))}
@@ -98,6 +110,15 @@ export default function DiaryCard({ diary: initial, onDeleted }: Props) {
           onSave={async (text) => setDiary(await updateDiary(diary.id, text))}
         />
       )}
+      {dialog?.kind === "tagDiary" && (
+        <TagDialog
+          title={T.tag.diaryTitle}
+          quote={diary.text}
+          initialTag={diary.tag}
+          onClose={close}
+          onSave={async (tagId) => setDiary(await setDiaryTag(diary.id, tagId))}
+        />
+      )}
       {dialog?.kind === "deleteDiary" && (
         <ConfirmDialog
           title={T.diary.deleteTitle}
@@ -123,6 +144,18 @@ export default function DiaryCard({ diary: initial, onDeleted }: Props) {
           }}
         />
       )}
+      {dialog?.kind === "tagComment" && (
+        <TagDialog
+          title={T.tag.commentTitle}
+          quote={dialog.comment.text}
+          initialTag={dialog.comment.tag}
+          onClose={close}
+          onSave={async (tagId) => {
+            const updated = await setCommentTag(dialog.comment.id, tagId);
+            setComments(comments.map((comment) => (comment.id === updated.id ? updated : comment)));
+          }}
+        />
+      )}
       {dialog?.kind === "deleteComment" && (
         <ConfirmDialog
           title={T.comment.deleteTitle}
@@ -139,3 +172,5 @@ export default function DiaryCard({ diary: initial, onDeleted }: Props) {
     </>
   );
 }
+
+const TagChip = ({ tag }: { tag: TagRecord }) => <span className="tag-chip">{tag.name}</span>;

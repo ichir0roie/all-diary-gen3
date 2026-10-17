@@ -32,7 +32,7 @@ def dumped(result: BaseModel | Sequence[BaseModel]) -> dict | list[dict]:
 
 
 def loading(query: Select, record_model: type[Material]) -> Select:
-    """`record_model` に詰めるのに要るリレーション(日記のコメント)を読む。
+    """`record_model` に詰めるのに要るリレーション(日記のコメント・タグ)を読む。
     同じセッションに行が残っていると eager load が効かないので `populate_existing` を付ける。"""
     return query.options(*record_model.LOAD_OPTIONS).execution_options(populate_existing=True)
 

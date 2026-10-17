@@ -4,9 +4,14 @@
 
 - 日記の画面(`/`): 同じ時期の一週間を、今年・去年・一昨年と横に並べる(狭い画面では今年の一列だけ)。
   Year / Week のボタンで年と週をずらす。`/?day=YYYY-MM-DD` で開くとその日の週を出す(同じ日・ヒートマップ・似た日記から飛ぶ先)。
-  日記を押すと「Comment / Similar diaries / Edit / Delete」、コメントを押すと「Edit / Delete」のメニューが開く
+  日記を押すと「Comment / Similar diaries / Tag… / Edit / Delete」、コメントを押すと「Tag… / Edit / Delete」のメニューが開く
   (日記を消すと付いたコメントも消える。このメニューは同じ日・似た日記の画面の日記でも同じ)。
+  「Tag…」は、既にあるタグから選ぶか、打った名前で新しく作って付ける(日記・コメントに一つずつ。「No tag」で外す)。
   下の欄で日記を書く。「Send to future…」は、届ける日を選んで日記を未来へ送る(その日の 0 時まで封をし、届くとその日の日記として並ぶ)
+- タグで探す画面(`/tag-search`): 今あるタグを押して選ぶ(いくつでも。もう一度押すと外す)。選んだタグのどれか(OR)が日記か、
+  そのコメントに付いた日記を新しい順に並べる(その週を開くリンク付き)。`/tag-search?tag=ID&tag=ID` で開くとそのタグを選んで出す。
+  タグの一覧の右の「Edit」で、一覧がタグを作る・名前を変える・消す表に替わる(「Done」で戻る)。タグごとに付けた日記・コメントの数を出す。
+  消したタグが付いていた日記・コメントは消えず、タグ無しに戻る
 - 同じ日の画面(`/on-this-day`): 今日と同じ月日の日記を、書き始めた年から今年まで年ごとに縦に並べる。Day で日をずらし、
   Range で前後何日まで含めるかを選ぶ
 - 似た日記の画面(`/similar`): 日記のメニューの「Similar diaries」から `/similar?diary=ID` で来ると、その日記を上に、
@@ -79,17 +84,24 @@ API 側は `DIARY_API_KEYS` に呼ぶ側ごとの鍵の SHA-256 を `gui=sha256:
 | POST | `/api/diaries` | 日記を足す。`{"text", "time"?}`(`CommitDiary`) |
 | PATCH | `/api/diaries/{id}` | 日記の本文を書き直す。`{"text"}`(`UpdateDiary`) |
 | DELETE | `/api/diaries/{id}` | 日記を付いたコメントごと消す(`DeleteDiary`) |
+| GET | `/api/diaries/tagged?tag_id=…&tag_id=…` | 選んだタグのどれかが日記か、そのコメントに付いた日記を、コメント付きで新しい順に。他の人のタグが混ざれば 404(`ListTaggedDiaries`) |
 | POST | `/api/diaries/similar` | `{"text"}` に似た日記の数と、似ている順の頭の 50 件(`SearchSimilarDiaries`) |
 | GET | `/api/diaries/{id}/similar` | 日記一件に似た日記の数と、似ている順の頭の 50 件。元の日記は除く(`ListSimilarDiaries`) |
 | GET | `/api/on-this-day?day=&around_days=` | `day` と同じ月日の前後の日記を、年ごとに(`ListOnThisDay`) |
 | GET | `/api/diary-counts?start_date=&end_date=` | 日ごとの日記の件数と文字数(`CountDiariesByDay`) |
 | POST | `/api/future-diaries` | 日記を未来へ送る。`{"text", "deliver_on"}`(`SendFutureDiary`) |
 | GET | `/api/future-diaries` | まだ届いていない日記の、届く時刻と書いた時刻(`ListFutureDiaries`。本文は返さない) |
+| PUT | `/api/diaries/{id}/tag` | 日記にタグを付ける。`{"tag_id"}`(null で外す)(`SetDiaryTag`) |
 | GET | `/api/diaries/{id}/comments` | 日記一件のコメント(`ListComments`) |
 | GET | `/api/comments/{id}` | コメント一件(`ReadComment`) |
 | POST | `/api/comments` | コメントを足す。`{"diary_id", "text", "time"?}`(`CommitComment`) |
 | PATCH | `/api/comments/{id}` | コメントの本文を書き直す。`{"text"}`(`UpdateComment`) |
 | DELETE | `/api/comments/{id}` | コメントを消す(`DeleteComment`) |
+| PUT | `/api/comments/{id}/tag` | コメントにタグを付ける。`{"tag_id"}`(null で外す)(`SetCommentTag`) |
+| GET | `/api/tags` | タグを名前の順に、付けた日記・コメントの数と(`ListTags`) |
+| POST | `/api/tags` | タグを作る。`{"name"}`。同じ名前があれば 400(`CommitTag`) |
+| PATCH | `/api/tags/{id}` | タグの名前を変える。`{"name"}`(`UpdateTag`) |
+| DELETE | `/api/tags/{id}` | タグを消し、付いていた日記・コメントをタグ無しに戻す(`DeleteTag`) |
 | POST | `/api/csv/{diary\|comment}` | CSV を取り込む。`{"text": CSV の中身}`。`{"added", "skipped"}` を返す |
 | GET | `/api/csv/{diary\|comment}` | 取り込み直せる形の CSV(`text/csv`、ダウンロード) |
 | POST | `/api/legacy-db/summary` | 以前の SQLite の db ファイル(本文にそのまま。`application/octet-stream`)の、人ごとの件数(`SummarizeLegacyDb`) |
@@ -97,7 +109,7 @@ API 側は `DIARY_API_KEYS` に呼ぶ側ごとの鍵の SHA-256 を `gui=sha256:
 | GET | `/api/health` | db の種類(`{"dialect": "postgresql"}`) |
 | GET | `/api/ping` | 起きているかだけ(`DIARY_API_KEYS` があっても合言葉なしで通す) |
 
-`/api/ping` と `/api/health` 以外は `x-diary-user` が要る(無ければ 401)。他の人の日記・コメントと、まだ届いていない未来の日記は 404。
+`/api/ping` と `/api/health` 以外は `x-diary-user` が要る(無ければ 401)。他の人の日記・コメント・タグと、まだ届いていない未来の日記は 404。
 
 型を変えたら OpenAPI と TS の型を作り直す。
 

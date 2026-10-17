@@ -12,6 +12,7 @@ export const T = {
 
   nav: {
     diary: "Diary",
+    tagSearch: "Tag Search",
     past: "Past Day",
     onThisDay: "On This Day",
     heatmap: "Heatmap",
@@ -26,6 +27,12 @@ export const T = {
     weekLater: "Week +1",
     weekEarlier: "Week -1",
     today: "Today",
+    now: "Now",
+    reference: (time: string) => `At ${time}`,
+    boardHint: "Scroll up and down for other days, left and right (Shift + wheel) for other years.",
+    day: (day: string, weekday: string) => `${day} ${weekday}`,
+    days: (start: string, end: string) => `${start} – ${end}`,
+    weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     span: (year: string, start: string, end: string) => `${year}: ${start} – ${end}`,
     empty: "(no diary)",
     placeholder: "Write today's diary (Ctrl+Enter to post)",
@@ -73,6 +80,11 @@ export const T = {
     nonePending: "Nothing on the way.",
   },
 
+  dayInput: {
+    placeholder: "YYYY/MM/DD",
+    calendar: "Calendar",
+  },
+
   past: {
     title: "Write for a past day",
     hint: "Add a diary you did not write on the day. It is placed at the day and time you pick. To write to a future day, use “Send to future…” on the Diary page.",
@@ -108,6 +120,46 @@ export const T = {
     weekdays: ["", "Mon", "", "Wed", "", "Fri", ""],
     months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
     noDiaryYet: "No diary yet.",
+  },
+
+  tag: {
+    menu: "Tag…",
+    diaryTitle: "Tag diary",
+    commentTitle: "Tag comment",
+    search: "Find or create a tag",
+    none: "No tag",
+    create: (name: string) => `Create “${name}”`,
+    noTagYet: "No tag yet. Type a name to create one.",
+    save: "Save",
+    cancel: "Cancel",
+
+    hint: "A diary or a comment can have one tag. Tag them from the menu of a diary or a comment.",
+    newName: "New tag",
+    add: "Add",
+    name: "Name",
+    usage: "Used by",
+    usageCount: (diaries: number, comments: number) =>
+      `${diaries} diar${diaries === 1 ? "y" : "ies"}, ${comments} comment${comments === 1 ? "" : "s"}`,
+    rename: "Rename",
+    delete: "Delete",
+    deleteTitle: "Delete tag",
+    deleteConfirm: (name: string, diaries: number, comments: number) =>
+      diaries + comments === 0
+        ? `Delete the tag “${name}”?`
+        : `Delete the tag “${name}”? It is removed from ${diaries} diar${diaries === 1 ? "y" : "ies"} and ${comments} comment${comments === 1 ? "" : "s"}; the diaries and comments are kept.`,
+    deleted: (name: string) => `Deleted “${name}”.`,
+  },
+
+  tagSearch: {
+    title: "Tag Search",
+    hint: "Choose one or more tags. Lists the diaries that have any of them, on the diary itself or on one of its comments. Newest first.",
+    noTagYet: "No tag yet. Press Edit to create one.",
+    choose: "Choose a tag to list its diaries.",
+    clear: "Clear",
+    edit: "Edit",
+    done: "Done",
+    found: (diaries: number) => `${diaries} diar${diaries === 1 ? "y" : "ies"}`,
+    none: "No diary has these tags.",
   },
 
   comment: {

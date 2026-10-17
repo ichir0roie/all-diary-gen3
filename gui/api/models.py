@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from data_access_logic.diary.form import DaySpanForm
+
 # CSV で出し入れする表
 CsvKind = Literal["diary", "comment"]
 
@@ -23,6 +25,11 @@ class CsvImportRequest(BaseModel):
 class SimilarSearchRequest(BaseModel):
     # 探す文章(書いている途中の日記)。長くなるので、クエリではなく本文で渡す
     text: str
+
+
+class DiarySpansRequest(BaseModel):
+    # 読む日付の範囲。年ごとの列の分をまとめて渡すので、クエリではなく本文で渡す
+    spans: list[DaySpanForm]
 
 
 # ファイルを本文にそのまま載せる要求(以前の SQLite の db ファイル)。読むのは `Request.body()` なので、OpenAPI にだけ形を書く

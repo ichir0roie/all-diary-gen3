@@ -33,8 +33,12 @@ db の触り方(入口越し・読み取り)は `.claude/docs/db.md` を見る�
 | `CommitDiary` | `diary.form.DiaryCreateForm` |
 | `UpdateDiary` | `diary.form.DiaryUpdateForm` |
 | `SendFutureDiary` | `diary.form.FutureDiaryCreateForm` |
+| `ListDiariesInSpans` | `diary.form.DaySpanForm` のリスト |
 | `CommitComment` | `comment.form.CommentCreateForm` |
 | `UpdateComment` | `comment.form.CommentUpdateForm` |
+| `CommitTag` | `tag.form.TagCreateForm` |
+| `UpdateTag` | `tag.form.TagUpdateForm` |
+| `SetDiaryTag` / `SetCommentTag` | `tag.form.TagChoiceForm` |
 
 (モジュールはどれも `data_access_logic.` を頭に付ける)
 
@@ -49,6 +53,7 @@ db の触り方(入口越し・読み取り)は `.claude/docs/db.md` を見る�
 | 依頼内容(言い回しの例) | 呼ぶコード |
 | --- | --- |
 | 「この期間の日記」「先週の日記を見せて」 | `diary.list_diaries.ListDiaries(user_id, start_date=None, end_date=None)`。日本時間の日付で、両端を含む。コメント付きで時刻の順に返す。省いた端は限らない |
+| 「この期間とこの期間の日記」「毎年の今週の日記」 | `diary.list_diaries_in_spans.ListDiariesInSpans(user_id, [DaySpanForm(start_date=…, end_date=…), …])`。範囲(日本時間の日付で両端を含む。100 個まで)ごとに `{"start_date", "end_date", "diaries"}` を頼んだ順に返す。範囲が重なれば、その日記はどちらにも入る。一度の問い合わせで読む |
 | 「この日記を見せて」 | `diary.read_diary.ReadDiary(user_id, diary_id)`。コメント付き |
 | 「日記を書いて」「日記を足して」 | `diary.commit_diary.CommitDiary(user_id, DiaryCreateForm(text=…, time=None))`。`time` を省けば今の時刻 |
 | 「この日記を書き直して」 | `diary.update_diary.UpdateDiary(user_id, diary_id, DiaryUpdateForm(text=…))`。本文だけを変え、時刻は変えない |
@@ -64,6 +69,13 @@ db の触り方(入口越し・読み取り)は `.claude/docs/db.md` を見る�
 | 「このコメントを書き直して」 | `comment.update_comment.UpdateComment(user_id, comment_id, CommentUpdateForm(text=…))`。時刻は変えない |
 | 「このコメントを消して」 | `comment.delete_comment.DeleteComment(user_id, comment_id)` |
 | 「この日記にコメントして」 | `comment.commit_comment.CommitComment(user_id, CommentCreateForm(diary_id=…, text=…, time=None))`。自分の日記にだけ足せる |
+| 「タグの一覧」「どのタグがいくつ付いている?」 | `tag.list_tags.ListTags(user_id)`。タグを名前の順に、付けた日記・コメントの数と返す(`[{"tag": {"id", "name"}, "diaries", "comments"}]`) |
+| 「タグを作って」 | `tag.commit_tag.CommitTag(user_id, TagCreateForm(name=…))`。名前の前後の空白は落とす。同じ人が同じ名前のタグを持っていれば `ValueError` |
+| 「このタグの名前を変えて」 | `tag.update_tag.UpdateTag(user_id, tag_id, TagUpdateForm(name=…))`。付けた日記・コメントはそのまま |
+| 「このタグを消して」 | `tag.delete_tag.DeleteTag(user_id, tag_id)`。付いていた日記・コメントは消さず、タグ無し(`tag_id` が NULL)に戻す。`{"id", "diaries", "comments"}`(タグを外した数)を返す |
+| 「このタグの日記」「◯◯か△△のタグが付いた日記を見せて」 | `diary.list_tagged_diaries.ListTaggedDiaries(user_id, tag_ids)`。`tag_ids` のタグのどれか(OR)が、日記か、そのコメントのどれかに付いた日記を、コメント付きで新しい順に返す。他の人のタグが混ざれば `UnknownRecordError` |
+| 「この日記にタグを付けて」「タグを外して」 | `diary.set_diary_tag.SetDiaryTag(user_id, diary_id, TagChoiceForm(tag_id=…))`。日記に付くタグは一つ。`tag_id=None` で外す。自分のタグだけ付けられる。まだ届いていない日記には付けられない |
+| 「このコメントにタグを付けて」 | `comment.set_comment_tag.SetCommentTag(user_id, comment_id, TagChoiceForm(tag_id=…))`。決まりは `SetDiaryTag` と同じ |
 | 「日記の CSV を取り込んで」「前の db から移して」 | `csv_file.import_diary_csv.ImportDiaryCsv(user_id, csv_text)`。列は `id,text,time`、未来へ送った日記は `written_at` も(以前の CSV の `user_id` の列は読まない)。時刻は `2021-01-02 09:00:00.000000` のような日本時間か、時差付きの ISO 8601。CSV の `id` は `migration_id` に残す。時刻と本文が同じ日記は、CSV の中では先の行を取り、db に既にあれば足さない(取り込み直しても重ならない)。`{"added", "skipped"}` を返す |
 | 「コメントの CSV を取り込んで」 | `csv_file.import_comment_csv.ImportCommentCsv(user_id, csv_text)`。列は `id,diary_id,text,time`。`diary_id` は日記の CSV の `id` で、先に取り込んだ日記(`migration_id`)を指す。指す日記が無ければ一件も足さずに止まる |
 | 「以前の db ファイルに誰の日記が入っている?」 | `legacy_db.summarize_legacy_db.SummarizeLegacyDb(sqlite_bytes)`。以前の API の SQLite の db ファイル(`open(path, "rb").read()`)の、人(以前の Cognito のユーザーの sub)ごとの日記・コメントの件数と期間。db(RDS)には触れない |

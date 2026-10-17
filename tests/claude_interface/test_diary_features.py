@@ -8,8 +8,9 @@ from data_access_logic.comment.form import CommentCreateForm
 from data_access_logic.constants import JST
 from data_access_logic.diary.count_diaries_by_day import CountDiariesByDay
 from data_access_logic.diary.delete_diary import DeleteDiary
-from data_access_logic.diary.form import DiaryUpdateForm, FutureDiaryCreateForm
+from data_access_logic.diary.form import DaySpanForm, DiaryUpdateForm, FutureDiaryCreateForm
 from data_access_logic.diary.list_diaries import ListDiaries
+from data_access_logic.diary.list_diaries_in_spans import ListDiariesInSpans
 from data_access_logic.diary.list_future_diaries import ListFutureDiaries
 from data_access_logic.diary.list_on_this_day import ListOnThisDay, same_day_in
 from data_access_logic.diary.list_similar_diaries import ListSimilarDiaries
@@ -165,3 +166,24 @@ def test_list_similar_to_unreadable_diary(shown, book):
     for diary_id in (book.other_diary_id, sealed["id"]):
         with pytest.raises(UnknownRecordError):
             ListSimilarDiaries(book.user_id, diary_id).run()
+
+
+def test_list_diaries_in_spans(shown, book):
+    add_diaries(book.user_id, (datetime(2023, 7, 2, 7, 0, tzinfo=JST), "一年前の同じ日"))
+    spans = [DaySpanForm(start_date=date(2024, 7, 2), end_date=date(2024, 7, 3)),
+             DaySpanForm(start_date=date(2023, 7, 1), end_date=date(2023, 7, 3)),
+             DaySpanForm(start_date=date(2024, 7, 1), end_date=date(2024, 7, 2))]
+
+    result = shown(ListDiariesInSpans(book.user_id, spans))
+
+    # 頼んだ順に返し、重なった 7 月 2 日の日記はどちらの範囲にも入る
+    assert [(span["start_date"], [diary["text"] for diary in span["diaries"]]) for span in result] == [
+        ("2024-07-02", ["7 月 2 日の日記", "7 月 3 日の日記"]),
+        ("2023-07-01", ["一年前の同じ日"]),
+        ("2024-07-01", ["7 月 1 日の日記", "7 月 2 日の日記"])]
+    assert [comment["id"] for comment in result[0]["diaries"][0]["comments"]] == [book.comment_id]
+
+
+def test_list_diaries_in_spans_rejects_reversed_span(book):
+    with pytest.raises(ValueError, match="end_date"):
+        ListDiariesInSpans(book.user_id, [DaySpanForm(start_date=date(2024, 7, 3), end_date=date(2024, 7, 1))])

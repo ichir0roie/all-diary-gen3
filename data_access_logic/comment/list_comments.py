@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from data_access_logic.comment.record import CommentRecord
-from data_access_logic.entrypoint import SessionEntrypoint
+from data_access_logic.entrypoint import SessionEntrypoint, loading
 from db.schema import Comment
 
 
@@ -20,4 +20,4 @@ class ListComments(SessionEntrypoint):
         query = (select(Comment)
                  .where(Comment.user_id == self.user_id, Comment.diary_id == self.diary_id)
                  .order_by(Comment.time, Comment.id))
-        return [CommentRecord.model_validate(row) for row in s.scalars(query)]
+        return [CommentRecord.model_validate(row) for row in s.scalars(loading(query, CommentRecord))]

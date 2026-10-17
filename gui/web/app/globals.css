@@ -36,11 +36,11 @@ h1 { font-size: 1.4rem; margin: 0 0 0.75rem; }
 h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
 
 input, select, textarea, button { font: inherit; color: inherit; }
-select, textarea, input[type="file"] {
+select, textarea, input[type="file"], .text-input {
   width: 100%; padding: 0.4rem 0.55rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel);
 }
 textarea { resize: vertical; line-height: 1.7; }
-select:focus, textarea:focus { outline: 2px solid color-mix(in srgb, var(--accent) 50%, transparent); outline-offset: 0; }
+select:focus, textarea:focus, .text-input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 50%, transparent); outline-offset: 0; }
 
 button { padding: 0.45rem 0.9rem; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; }
 button:hover { border-color: var(--accent); }
@@ -50,7 +50,7 @@ button.ghost { background: transparent; }
 button.danger { background: var(--danger); color: var(--panel); border-color: var(--danger); }
 button.link { padding: 0; border: none; color: var(--accent); font-size: inherit; }
 button.link:hover { text-decoration: underline; }
-input[type="date"], input[type="time"] { padding: 0.35rem 0.55rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+input[type="date"], input[type="time"], .day-input input[type="text"] { padding: 0.35rem 0.55rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
 .inline-field { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.9rem; }
 .inline-field select { width: auto; }
 .badge { display: inline-block; margin-left: 0.5rem; padding: 0 0.45rem; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 0.75rem; }
@@ -90,6 +90,22 @@ table.list code { font-size: 0.8rem; overflow-wrap: anywhere; }
 }
 .diary-week h2 { color: var(--muted); font-weight: 600; }
 .diary-week .empty { color: var(--muted); font-size: 0.9rem; }
+
+/* パソコンの日記の画面(components/DiaryBoard.tsx)。画面の高さに収め、日(縦)と年(横)は盤の中でスクロールする。
+   main の親はログインの有無で body か Amplify の div になる */
+:has(> main .diary-board-page) { height: 100dvh; display: flex; flex-direction: column; }
+main:has(.diary-board-page), .diary-board-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.diary-board-page .toolbar .reference { font-variant-numeric: tabular-nums; }
+.diary-board-page .toolbar .hint { margin: 0 0 0 auto; }
+/* 足し消しした行の位置合わせは DiaryBoard が自分でするので、ブラウザのスクロールの位置合わせとは重ねない */
+.diary-board { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; overflow-anchor: none; }
+.diary-board-row { display: flex; gap: 0.75rem; width: max-content; border-top: 1px solid var(--line); }
+.diary-board-cell { flex: 0 0 24rem; padding: 0.2rem 0 0.4rem; }
+.diary-board-cell .day, .diary-board-cell .loading { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.diary-board-cell .day { margin-bottom: 0.2rem; }
+.diary-board-cell.today .day { color: var(--accent); font-weight: 600; }
+.diary-board-cell.future .day { opacity: 0.5; }
+.diary-board-cell .diary-card:last-child { margin-bottom: 0; }
 
 .diary-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 0.8rem; margin-bottom: 0.6rem; cursor: pointer; }
 .diary-card:hover { border-color: var(--accent); }
@@ -179,3 +195,39 @@ table.list code { font-size: 0.8rem; overflow-wrap: anywhere; }
 .past-page h2 { display: flex; align-items: baseline; gap: 0.6rem; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding-bottom: 0.2rem; }
 .past-page h2 .open-week { margin-left: auto; font-weight: 400; font-size: 0.85rem; }
 .past-page .empty { color: var(--muted); font-size: 0.9rem; }
+
+/* タグ(components/TagDialog.tsx・components/TagEditor.tsx・app/tag-search) */
+.tag-chip { display: inline-block; margin-left: 0.5rem; padding: 0 0.5rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--accent); font-size: 0.75rem; line-height: 1.5; }
+.tag-choices { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.tag-choices button { padding: 0.15rem 0.7rem; border-radius: 999px; font-size: 0.85rem; }
+.tag-choices button.tag-chip { margin-left: 0; background: var(--panel); }
+.tag-choices button.create { border-style: dashed; color: var(--accent); }
+.tag-choices button.chosen { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); border-style: solid; }
+.tag-editor .hint { margin-top: 0; }
+.tag-editor .toolbar .text-input { flex: 1; min-width: 10rem; width: auto; }
+.tag-editor .empty { color: var(--muted); font-size: 0.9rem; }
+.tag-search-page { max-width: 46rem; }
+.tag-search-tags { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; }
+.tag-search-tags > :first-child { flex: 1; min-width: 0; }
+.tag-search-tags .edit { white-space: nowrap; line-height: 1.9; }
+.tag-search-page h2 { color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding-bottom: 0.2rem; margin-top: 1rem; }
+.tag-search-page .empty { color: var(--muted); font-size: 0.9rem; }
+.tag-search-item .meta { display: flex; justify-content: flex-end; font-size: 0.8rem; margin-bottom: 0.2rem; }
+.tag-list tbody tr { cursor: default; }
+.tag-list .tag-chip { margin-left: 0; font-size: 0.85rem; }
+.tag-list .usage { color: var(--muted); white-space: nowrap; }
+.tag-list .actions { text-align: right; white-space: nowrap; }
+.tag-list .actions button, .tag-list .rename button { padding: 0.2rem 0.6rem; font-size: 0.85rem; }
+.tag-list .actions button + button { margin-left: 0.4rem; }
+.tag-list .rename { display: flex; gap: 0.4rem; align-items: center; }
+.tag-list .rename .text-input { padding: 0.2rem 0.45rem; min-width: 6rem; }
+@media (max-width: 640px) {
+  .tag-list .usage { white-space: normal; }
+}
+
+/* 日付の欄(components/DayInput.tsx)。カレンダーの選び窓を開くための <input type="date"> は、ボタンの下に見えないように置く */
+.day-input { position: relative; display: inline-flex; align-items: center; gap: 0.3rem; }
+.day-input input[type="text"] { width: 8.5em; font-variant-numeric: tabular-nums; }
+.day-input input[aria-invalid="true"] { border-color: var(--danger); }
+.day-input button { padding: 0.35rem 0.6rem; font-size: 0.85rem; }
+.day-input .picker { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }

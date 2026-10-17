@@ -3,6 +3,8 @@ import { loginRequired } from "./auth";
 import type { components } from "./openapi";
 
 export type DiaryRecord = components["schemas"]["DiaryRecord"];
+export type DaySpan = components["schemas"]["DaySpanForm"];
+export type DiarySpan = components["schemas"]["DiarySpan"];
 export type CommentRecord = components["schemas"]["CommentRecord"];
 export type Imported = components["schemas"]["Imported"];
 export type CsvKind = "diary" | "comment";
@@ -12,6 +14,9 @@ export type FutureDiaryRecord = components["schemas"]["FutureDiaryRecord"];
 export type OnThisDayYear = components["schemas"]["OnThisDayYear"];
 export type DayCount = components["schemas"]["DayCount"];
 export type SimilarDiaries = components["schemas"]["SimilarDiaries"];
+export type TagRecord = components["schemas"]["TagRecord"];
+export type TagUsage = components["schemas"]["TagUsage"];
+export type DeletedTag = components["schemas"]["DeletedTag"];
 
 export class ApiError extends Error {
   status: number;
@@ -50,6 +55,10 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 export const listDiaries = (startDate: string, endDate: string) =>
   api<DiaryRecord[]>(`/api/diaries?${new URLSearchParams({ start_date: startDate, end_date: endDate })}`);
 
+/** `spans` の範囲(日本時間の日付で両端を含む。100 個まで)ごとの日記を、頼んだ順に一度に読む */
+export const listDiariesInSpans = (spans: DaySpan[]) =>
+  api<DiarySpan[]>("/api/diaries/spans", { method: "POST", body: JSON.stringify({ spans }) });
+
 /** `time`(ISO 8601)を省けば、時刻は API が書き込んだ時刻にする。今より後の時刻は API が断る */
 export const commitDiary = (text: string, time?: string) =>
   api<DiaryRecord>("/api/diaries", { method: "POST", body: JSON.stringify({ text, time }) });
@@ -68,6 +77,29 @@ export const updateComment = (commentId: number, text: string) =>
 
 export const deleteComment = (commentId: number) =>
   api<DeletedComment>(`/api/comments/${commentId}`, { method: "DELETE" });
+
+/** `tagId` が null ならタグを外す */
+export const setDiaryTag = (diaryId: number, tagId: number | null) =>
+  api<DiaryRecord>(`/api/diaries/${diaryId}/tag`, { method: "PUT", body: JSON.stringify({ tag_id: tagId }) });
+
+export const setCommentTag = (commentId: number, tagId: number | null) =>
+  api<CommentRecord>(`/api/comments/${commentId}/tag`, { method: "PUT", body: JSON.stringify({ tag_id: tagId }) });
+
+/** タグを名前の順に、付けた日記・コメントの数と */
+export const listTags = () => api<TagUsage[]>("/api/tags");
+
+/** `tagIds` のタグのどれかが、日記か、そのコメントに付いた日記を、コメント付きで新しい順に */
+export const listTaggedDiaries = (tagIds: number[]) =>
+  api<DiaryRecord[]>(`/api/diaries/tagged?${new URLSearchParams(tagIds.map((id) => ["tag_id", String(id)]))}`);
+
+/** 同じ名前のタグが既にあれば API が断る */
+export const commitTag = (name: string) => api<TagRecord>("/api/tags", { method: "POST", body: JSON.stringify({ name }) });
+
+export const updateTag = (tagId: number, name: string) =>
+  api<TagRecord>(`/api/tags/${tagId}`, { method: "PATCH", body: JSON.stringify({ name }) });
+
+/** 付いていた日記・コメントは消さず、タグ無しに戻す */
+export const deleteTag = (tagId: number) => api<DeletedTag>(`/api/tags/${tagId}`, { method: "DELETE" });
 
 /** `deliverOn`("YYYY-MM-DD"、日本時間)の 0 時に届く日記を送る。届くまで本文は読めない */
 export const sendFutureDiary = (text: string, deliverOn: string) =>
