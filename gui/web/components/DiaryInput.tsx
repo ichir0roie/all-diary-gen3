@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import FutureSendModal from "@/components/FutureSendModal";
 import { commitDiary } from "@/lib/api";
 import { isSubmitKey } from "@/lib/keys";
@@ -12,6 +12,15 @@ export default function DiaryInput({ onPosted }: { onPosted: () => void }) {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [future, setFuture] = useState(false);
+  const area = useRef<HTMLTextAreaElement>(null);
+
+  // 改行の数だけでは、狭い画面で折り返した行を数えられないので、中身の高さに合わせる
+  useLayoutEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+  }, [text]);
 
   const canPost = !posting && text.trim() !== "";
 
@@ -32,8 +41,9 @@ export default function DiaryInput({ onPosted }: { onPosted: () => void }) {
   return (
     <div className="diary-input">
       <textarea
+        ref={area}
         value={text}
-        rows={Math.max(2, text.split("\n").length)}
+        rows={2}
         placeholder={T.diary.placeholder}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {

@@ -118,8 +118,12 @@ main:has(.diary-board-page), .diary-board-page { flex: 1; min-height: 0; display
 .diary-card .comments li + li { margin-top: 0.4rem; }
 
 .diary-input { position: sticky; bottom: 0; display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; padding: 0.6rem 0; background: var(--bg); }
-.diary-input textarea { flex: 1; min-width: 12rem; }
+.diary-input textarea { flex: 1; min-width: 12rem; max-height: 40dvh; resize: none; }
 .diary-input .status { flex-basis: 100%; }
+@media (max-width: 640px) {
+  .diary-input textarea { flex-basis: 100%; }
+  .diary-input button:first-of-type { margin-left: auto; }
+}
 
 /* モーダル(components/Modal.tsx) */
 .modal-backdrop { position: fixed; inset: 0; z-index: 40; background: rgb(0 0 0 / 0.35); display: flex; justify-content: center; align-items: flex-start; padding-top: 10vh; }
