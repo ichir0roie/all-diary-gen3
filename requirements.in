@@ -6,7 +6,7 @@
 # PostgreSQL(DIARY_DATABASE_URL)へは psycopg で繋ぐ(`.docs/postgres.md`)。boto3 は RDS の IAM データベース認証のトークンと、
 # 手元の転送越しに繋ぐときの RDS のエンドポイント(SSM)を引くのに使う
 sqlalchemy>=2.0
-pydantic>=2.0
+pydantic>=2.14.1
 alembic>=1.16
 pytest>=8.0
 fastapi>=0.115
